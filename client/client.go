@@ -109,6 +109,24 @@ func (m Metrics) convert() map[string]string {
 	return formatted
 }
 
+// Set a Log value - expects plain text which will be url encoded
+func (l Log) Set(request string, response string, statusCode int) {
+	l["request"] = url.QueryEscape(request)
+	l["response"] = url.QueryEscape(response)
+	l["code"] = url.QueryEscape(strconv.Itoa(statusCode))
+}
+
+// Converts a Log type into formatted map as expected by 3scale API
+func (l Log) convert() map[string]string {
+	formatted := make(map[string]string, 3)
+	for k, v := range l {
+		if v != "" {
+			formatted[fmt.Sprintf("log[%s]", k)] = v
+		}
+	}
+	return formatted
+}
+
 // Verifies a custom backend is valid
 func verifyBackendUrl(urlToCheck string) (*url.URL, error) {
 	url2, err := url.ParseRequestURI(urlToCheck)
@@ -142,7 +160,7 @@ func getApiResp(r io.Reader) (ApiResponse, error) {
 
 // Helper function to read custom tags and add them to query string
 // Returns a list of values formatted as expected by 3scale API
-func parseQueries(obj interface{}, values url.Values, m Metrics) url.Values {
+func parseQueries(obj interface{}, values url.Values, m Metrics, l Log) url.Values {
 	if obj == nil {
 		return values
 	}
@@ -151,7 +169,7 @@ func parseQueries(obj interface{}, values url.Values, m Metrics) url.Values {
 	for i := 0; i < v.NumField(); i++ {
 
 		if v.Type().Field(i).Type.Kind() == reflect.Struct {
-			parseQueries(v.Field(i).Interface(), values, nil)
+			parseQueries(v.Field(i).Interface(), values, nil, nil)
 			continue
 		}
 
@@ -173,6 +191,10 @@ func parseQueries(obj interface{}, values url.Values, m Metrics) url.Values {
 	}
 
 	for k, v := range m.convert() {
+		values.Add(k, v)
+	}
+
+	for k, v := range l.convert() {
 		values.Add(k, v)
 	}
 

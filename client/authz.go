@@ -17,7 +17,7 @@ func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, ser
 		return authRepResp, errors.New(httpReqError.Error() + " for Authorize")
 	}
 
-	values := parseQueries(arp, url.Values{}, arp.Metrics)
+	values := parseQueries(arp, url.Values{}, arp.Metrics, nil)
 	values.Add("app_id", appId)
 	values.Add("service_token", serviceToken)
 	values.Add("service_id", serviceId)
@@ -39,7 +39,7 @@ func (client *ThreeScaleClient) AuthorizeKey(userKey string, serviceToken string
 		return resp, errors.New(httpReqError.Error() + " for AuthRepKey")
 	}
 
-	values := parseQueries(arp, url.Values{}, arp.Metrics)
+	values := parseQueries(arp, url.Values{}, arp.Metrics, nil)
 	values.Add("user_key", userKey)
 	values.Add("service_token", serviceToken)
 	values.Add("service_id", serviceId)

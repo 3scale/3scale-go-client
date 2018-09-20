@@ -36,6 +36,12 @@ type AuthorizeKeyParams struct {
 	Metrics  Metrics
 }
 
+// AuthRepParams - optional params for AuthRep API - App ID pattern
+type AuthRepParams struct {
+	AuthorizeParams
+	Log Log
+}
+
 // Backend defines a 3scale backend service
 type Backend struct {
 	scheme  string
@@ -43,6 +49,9 @@ type Backend struct {
 	port    int
 	baseUrl *url.URL
 }
+
+// Log to be reported
+type Log map[string]string
 
 // Metrics to be reported
 type Metrics map[string]int
