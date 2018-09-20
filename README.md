@@ -41,3 +41,31 @@ parameters for both API's.
 	resp, _ = c.AuthorizeKey("userKey", "svcToken", "svcID", p)
 	
 ```
+
+### Calling the AuthRep endpoint
+
+The client supports calling the `AuthRep` endpoint using both the **_Application ID_** and **_Application Key_** authentication patterns. Metrics and Log can be added as well as optional
+parameters for both API's.
+
+```go
+	client := NewThreeScale(nil, nil)
+	// App Id Pattern - No optional params
+	resp, err := client.AuthRep("myAppId", "mySvcToken", "myServiceId", AuthRepParams{})
+	if err != nil {
+		// Handle error
+	}
+	if !resp.Success {
+		fmt.Printf("request failed - reason: %s", resp.Reason)
+	}
+
+	// App Id pattern with optional params and metrics
+	p := NewAuthRepParams("myAppKey", "exampleReferrer", "")
+	p.Metrics.Add("hits", 1)
+	p.Log.Set("exampleReq", "exampleResp", 200)
+	resp, _ = client.AuthRep("myAppId", "mySvcToken", "myServiceId", p)
+
+	// App key pattern with optional params
+	pms := NewAuthRepKeyParams("exampleRef", "exampleId")
+	resp, _ = client.AuthRepKey("userKey", "svcToken", "svcID", pms)
+	
+```
