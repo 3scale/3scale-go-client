@@ -36,10 +36,45 @@ func (client *ThreeScaleClient) AuthRep(appId string, serviceToken string, servi
 	return authRepRes, nil
 }
 
+//AuthRep - Authorize & Report for the API Key authentication pattern
+func (client *ThreeScaleClient) AuthRepKey(userKey string, serviceToken string, serviceId string, arp AuthRepKeyParams) (ApiResponse, error) {
+	var resp ApiResponse
+
+	req, err := client.buildGetReq(authRepEndpoint)
+	if err != nil {
+		return resp, errors.New(httpReqError.Error() + " for AuthRepKey")
+	}
+
+	values := parseQueries(arp, url.Values{}, arp.Metrics, arp.Log)
+	values.Add("user_key", userKey)
+	values.Add("service_token", serviceToken)
+	values.Add("service_id", serviceId)
+
+	req.URL.RawQuery = values.Encode()
+	resp, err = client.doHttpReq(req)
+	if err != nil {
+		return resp, fmt.Errorf("error calling 3Scale API - %s", err.Error())
+	}
+	return resp, nil
+}
+
+// Create valid params for AuthRep
 func NewAuthRepParams(key string, referrer string, userId string) AuthRepParams {
 	return AuthRepParams{
 		AuthorizeParams: AuthorizeParams{
 			AppKey:   key,
+			Referrer: referrer,
+			UserId:   userId,
+			Metrics:  make(Metrics),
+		},
+		Log: make(Log),
+	}
+}
+
+// Create valid params for AuthRepKey
+func NewAuthRepKeyParams(referrer string, userId string) AuthRepKeyParams {
+	return AuthRepKeyParams{
+		AuthorizeKeyParams: AuthorizeKeyParams{
 			Referrer: referrer,
 			UserId:   userId,
 			Metrics:  make(Metrics),

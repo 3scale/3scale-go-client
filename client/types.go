@@ -42,6 +42,12 @@ type AuthRepParams struct {
 	Log Log
 }
 
+// AuthRepKeyParams - optional params for AuthRep API - App key pattern
+type AuthRepKeyParams struct {
+	AuthorizeKeyParams
+	Log Log
+}
+
 // Backend defines a 3scale backend service
 type Backend struct {
 	scheme  string
