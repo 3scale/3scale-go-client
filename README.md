@@ -15,3 +15,29 @@ A client can be created for the default 3scale backend, which points to `"https:
         })
 
 ```
+
+### Calling the Authorize endpoint
+
+The client supports calling the `Authorize` endpoint using both the **_Application ID_** and **_Application Key_** authentication patterns. Metrics can be added as well as optional
+parameters for both API's.
+
+```go
+        // App Id Pattern - No optional params
+	resp, err := c.Authorize("myAppId", "mySvcToken", "myServiceId", AuthorizeParams{})
+	if err != nil {
+		// Handle error
+	}
+	if !resp.Success {
+		fmt.Printf("request failed - reason: %s", resp.Reason)
+	}
+	
+	// App Id pattern with optional params and metrics
+	p := NewAuthorizeParams("myAppKey", "exampleReferrer", "")
+	p.Metrics.Add("hits", 1)
+	resp, _ = c.Authorize("myAppId", "mySvcToken", "myServiceId", p)
+	
+	// App key pattern with optional params
+	p = NewAuthorizeKeyParams("exampleRef", "exampleId")
+	resp, _ = c.AuthorizeKey("userKey", "svcToken", "svcID", p)
+	
+```

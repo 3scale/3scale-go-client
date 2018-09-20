@@ -21,9 +21,16 @@ type ApiResponseXML struct {
 	Code       string   `xml:"code,attr,omitempty"`
 }
 
-// AuthorizeParams - optional parameters for the Authorize API
+// AuthorizeParams - optional parameters for the Authorize API - App ID pattern
 type AuthorizeParams struct {
 	AppKey   string `query:"app_key"`
+	Referrer string `query:"referrer"`
+	UserId   string `query:"user_id"`
+	Metrics  Metrics
+}
+
+// AuthorizeParams - optional parameters for the Authorize API - App key pattern
+type AuthorizeKeyParams struct {
 	Referrer string `query:"referrer"`
 	UserId   string `query:"user_id"`
 	Metrics  Metrics
