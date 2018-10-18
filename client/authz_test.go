@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"regexp"
 	"testing"
+
+	"github.com/3scale/3scale-go-client/fake"
 )
 
 func TestAuthorize(t *testing.T) {
@@ -73,7 +75,7 @@ func TestAuthorize(t *testing.T) {
 
 			return &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(getAuthSuccess())),
+				Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
 				Header:     make(http.Header),
 			}
 		})
@@ -236,7 +238,7 @@ func TestAuthorizeKey(t *testing.T) {
 			if queryId != fakeServiceId || queryToken != fakeServiceToken {
 				return &http.Response{
 					StatusCode: 403,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(genInvalidIdOrTokenResp(queryToken, queryId))),
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GenInvalidIdOrTokenResp(queryToken, queryId))),
 					Header:     make(http.Header),
 				}
 			}
@@ -244,7 +246,7 @@ func TestAuthorizeKey(t *testing.T) {
 			if queryUserKey != fakeUserKey {
 				return &http.Response{
 					StatusCode: 403,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(genInvalidUserKey(queryUserKey))),
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GenInvalidUserKey(queryUserKey))),
 					Header:     make(http.Header),
 				}
 			}
@@ -254,14 +256,14 @@ func TestAuthorizeKey(t *testing.T) {
 					if k != fakeMetricKey {
 						return &http.Response{
 							StatusCode: 409,
-							Body:       ioutil.NopCloser(bytes.NewBufferString(getInvalidMetricResp())),
+							Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetInvalidMetricResp())),
 							Header:     make(http.Header),
 						}
 					}
 					if k == fakeMetricKey && v[0] == "6" {
 						return &http.Response{
 							StatusCode: 409,
-							Body:       ioutil.NopCloser(bytes.NewBufferString(getLimitExceededResp())),
+							Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetLimitExceededResp())),
 							Header:     make(http.Header),
 						}
 					}
@@ -270,7 +272,7 @@ func TestAuthorizeKey(t *testing.T) {
 			}
 			return &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(getAuthSuccess())),
+				Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
 				Header:     make(http.Header),
 			}
 		})
