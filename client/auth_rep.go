@@ -16,39 +16,42 @@ const authRepEndpoint = "/transactions/authrep.xml"
 
 //AuthRep - Authorize & Report for the Application Id authentication pattern
 func (client *ThreeScaleClient) AuthRep(appId string, serviceToken string, serviceId string, arp AuthRepParams) (ApiResponse, error) {
-	var authRepResp ApiResponse
-
-	req, err := client.buildGetReq(authRepEndpoint)
-	if err != nil {
-		return authRepResp, errors.New(httpReqError.Error() + " for AuthRep")
-	}
-
 	values := parseQueries(arp, url.Values{}, arp.Metrics, arp.Log)
 	values.Add("app_id", appId)
 	values.Add("service_token", serviceToken)
 	values.Add("service_id", serviceId)
 
-	req.URL.RawQuery = values.Encode()
-	authRepRes, err := client.doHttpReq(req)
-	if err != nil {
-		return authRepResp, fmt.Errorf("error calling 3Scale API - %s", err.Error())
-	}
-	return authRepRes, nil
+        return client.authRep(values)
 }
 
-//AuthRep - Authorize & Report for the API Key authentication pattern
+//AuthRepKey - Authorize & Report for the API Key authentication pattern with service token
 func (client *ThreeScaleClient) AuthRepKey(userKey string, serviceToken string, serviceId string, arp AuthRepKeyParams) (ApiResponse, error) {
-	var resp ApiResponse
-
-	req, err := client.buildGetReq(authRepEndpoint)
-	if err != nil {
-		return resp, errors.New(httpReqError.Error() + " for AuthRepKey")
-	}
-
 	values := parseQueries(arp, url.Values{}, arp.Metrics, arp.Log)
 	values.Add("user_key", userKey)
 	values.Add("service_token", serviceToken)
 	values.Add("service_id", serviceId)
+
+	return client.authRep(values)
+}
+
+//AuthRepProviderKey - Authorize & Report for the API Key authentication pattern with provider key
+func (client *ThreeScaleClient) AuthRepProviderKey(userKey string, providerKey string, serviceId string, arp AuthRepKeyParams) (ApiResponse, error) {
+	values := parseQueries(arp, url.Values{}, arp.Metrics, arp.Log)
+	values.Add("user_key", userKey)
+	values.Add("provider_key", providerKey)
+	values.Add("service_id", serviceId)
+
+	return client.authRep(values)
+}
+
+
+func (client *ThreeScaleClient) authRep(values url.Values)(ApiResponse, error) {
+	var resp ApiResponse
+
+	req, err := client.buildGetReq(authRepEndpoint)
+	if err != nil {
+		return resp, errors.New(httpReqError.Error() + " for AuthRep")
+	}
 
 	req.URL.RawQuery = values.Encode()
 	resp, err = client.doHttpReq(req)
@@ -57,6 +60,8 @@ func (client *ThreeScaleClient) AuthRepKey(userKey string, serviceToken string, 
 	}
 	return resp, nil
 }
+
+
 
 // Create valid params for AuthRep
 func NewAuthRepParams(key string, referrer string, userId string) AuthRepParams {
