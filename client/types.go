@@ -2,9 +2,13 @@ package client
 
 import (
 	"encoding/xml"
+	"errors"
 	"net/http"
 	"net/url"
 )
+
+const serviceToken = "service_token"
+const providerKey = "provider_key"
 
 // ApiResponse - formatted response to client
 type ApiResponse struct {
@@ -66,4 +70,35 @@ type Metrics map[string]int
 type ThreeScaleClient struct {
 	backend    *Backend
 	httpClient *http.Client
+}
+
+type ReportTransactions struct {
+	AppID     string `query:"app_id"`
+	UserKey   string `query:"user_key"`
+	UserId    string `query:"user_id"`
+	Timestamp string `query:"timestamp"`
+	Metrics   Metrics
+	Log       Log
+}
+
+type TokenAuth struct {
+	Type  string
+	Value string
+}
+
+func (auth *TokenAuth) SetURLValues(values *url.Values) (error) {
+
+	switch auth.Type {
+	case serviceToken:
+		values.Add("service_token", auth.Value)
+		return nil
+
+	case providerKey:
+		values.Add("provider_key", auth.Value)
+		return nil
+
+	default:
+		return errors.New("invalid token type value")
+	}
+
 }
