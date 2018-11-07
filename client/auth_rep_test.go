@@ -13,27 +13,34 @@ import (
 func TestAuthRep(t *testing.T) {
 	fakeAppId, fakeServiceToken, fakeServiceId := "appId12345", "servicetoken54321", "555000"
 	authRepInputs := []struct {
-		appId, svcToken, svcId string
-		expectErr              bool
-		expectSuccess          bool
-		expectReason           string
-		expectStatus           int
-		expectParamLength      int
-		buildParams            func() AuthRepParams
+		appId, svcId      string
+		auth              TokenAuth
+		expectErr         bool
+		expectSuccess     bool
+		expectReason      string
+		expectStatus      int
+		expectParamLength int
+		buildParams       func() AuthRepParams
 	}{
 		{
-			appId:             fakeAppId,
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			appId: fakeAppId,
+			svcId: fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
-			buildParams:       func() AuthRepParams { return NewAuthRepParams("example", "", "") },
+			buildParams:       func() AuthRepParams { return NewAuthRepParamsAppID("example", "", "", make(Metrics), make(Log)) },
 		},
 		{
-			appId:             "failme",
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			appId: "failme",
+			svcId: fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -67,7 +74,7 @@ func TestAuthRep(t *testing.T) {
 			}
 		})
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.AuthRep(input.appId, input.svcToken, input.svcId, input.buildParams())
+		resp, err := c.AuthRepAppID(input.auth, input.appId, input.svcId, input.buildParams())
 		if input.expectErr && err != nil {
 			continue
 		}
@@ -93,108 +100,136 @@ func TestAuthRepKey(t *testing.T) {
 	fakeUserKey, fakeServiceToken, fakeServiceId := "userkey12345", "servicetoken54321", "555000"
 	fakeMetricKey := "usage[hits]"
 	authRepInputs := []struct {
-		userKey, svcToken, svcId string
-		expectErr                bool
-		expectSuccess            bool
-		expectReason             string
-		expectStatus             int
-		expectParamLength        int
-		buildParams              func() AuthRepKeyParams
+		userKey, svcId    string
+		auth              TokenAuth
+		expectErr         bool
+		expectSuccess     bool
+		expectReason      string
+		expectStatus      int
+		expectParamLength int
+		buildParams       func() AuthRepParams
 	}{
 		{
-			userKey:           fakeUserKey,
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			userKey: fakeUserKey,
+			svcId:   fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
-			buildParams:       func() AuthRepKeyParams { return AuthRepKeyParams{} },
+			buildParams:       func() AuthRepParams { return AuthRepParams{} },
 		},
 		{
-			userKey:           fakeUserKey,
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			userKey: fakeUserKey,
+			svcId:   fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
-			buildParams:       func() AuthRepKeyParams { return AuthRepKeyParams{} },
+			buildParams:       func() AuthRepParams { return AuthRepParams{} },
 		},
 		{
-			userKey:           fakeUserKey,
-			svcId:             fakeServiceId,
-			svcToken:          "invalid",
+			userKey: fakeUserKey,
+			svcId:   fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: "invalid",
+			},
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
 			expectParamLength: 3,
-			buildParams:       func() AuthRepKeyParams { return AuthRepKeyParams{} },
+			buildParams:       func() AuthRepParams { return AuthRepParams{} },
 		},
 		{
-			userKey:           fakeUserKey,
-			svcId:             "invalid",
-			svcToken:          fakeServiceToken,
+			userKey: fakeUserKey,
+			svcId:   "invalid",
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
 			expectParamLength: 3,
-			buildParams:       func() AuthRepKeyParams { return AuthRepKeyParams{} },
+			buildParams:       func() AuthRepParams { return AuthRepParams{} },
 		},
 		{
-			userKey:           "invalid",
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			userKey: "invalid",
+			svcId:   fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectReason:      "user_key_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
 			expectParamLength: 3,
-			buildParams:       func() AuthRepKeyParams { return AuthRepKeyParams{} },
+			buildParams:       func() AuthRepParams { return AuthRepParams{} },
 		},
 		{
-			userKey:           fakeUserKey,
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			userKey: fakeUserKey,
+			svcId:   fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
-			buildParams: func() AuthRepKeyParams {
-				params := NewAuthRepKeyParams("", "")
+			buildParams: func() AuthRepParams {
+				params := NewAuthRepParamsUserKey("", "", make(Metrics), make(Log))
 				params.Metrics.Add("hits", 5)
 				return params
 			},
 		},
 		{
-			userKey:           fakeUserKey,
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			userKey: fakeUserKey,
+			svcId:   fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectSuccess:     false,
 			expectStatus:      409,
 			expectParamLength: 4,
 			expectReason:      "usage limits are exceeded",
-			buildParams: func() AuthRepKeyParams {
-				params := NewAuthRepKeyParams("", "")
+			buildParams: func() AuthRepParams {
+				params := NewAuthRepParamsUserKey("", "", make(Metrics), make(Log))
 				params.Metrics.Add("hits", 6)
 				return params
 			},
 		},
 		{
-			userKey:           "failme",
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			userKey: "failme",
+			svcId:   fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
 			expectParamLength: 3,
-			buildParams:       func() AuthRepKeyParams { return AuthRepKeyParams{} },
+			buildParams:       func() AuthRepParams { return AuthRepParams{} },
 		},
 		{
-			userKey:           fakeUserKey,
-			svcId:             fakeServiceId,
-			svcToken:          fakeServiceToken,
+			userKey: fakeUserKey,
+			svcId:   fakeServiceId,
+			auth: TokenAuth{
+				Type:  serviceToken,
+				Value: fakeServiceToken,
+			},
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 9,
-			buildParams: func() AuthRepKeyParams {
-				params := NewAuthRepKeyParams("testR", "testUid")
+			buildParams: func() AuthRepParams {
+				params := NewAuthRepParamsUserKey("testR", "testUid", make(Metrics), make(Log))
 				params.Metrics.Add("hits", 5)
 				params.Log.Set("testlog", "testresp", 200)
 				return params
@@ -266,7 +301,7 @@ func TestAuthRepKey(t *testing.T) {
 		})
 
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.AuthRepKey(input.userKey, input.svcToken, input.svcId, input.buildParams())
+		resp, err := c.AuthRepUserKey(input.auth, input.userKey, input.svcId, input.buildParams())
 		if input.expectErr && err != nil {
 			continue
 		}

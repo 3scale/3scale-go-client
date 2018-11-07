@@ -15,37 +15,34 @@ import (
 const authRepEndpoint = "/transactions/authrep.xml"
 
 //AuthRep - Authorize & Report for the Application Id authentication pattern
-func (client *ThreeScaleClient) AuthRep(appId string, serviceToken string, serviceId string, arp AuthRepParams) (ApiResponse, error) {
-	values := parseQueries(arp, url.Values{}, arp.Metrics, arp.Log)
+func (client *ThreeScaleClient) AuthRepAppID(auth TokenAuth, appId string, serviceId string, params AuthRepParams) (ApiResponse, error) {
+	values := parseQueries(params, url.Values{}, params.Metrics, params.Log)
 	values.Add("app_id", appId)
-	values.Add("service_token", serviceToken)
 	values.Add("service_id", serviceId)
 
-        return client.authRep(values)
+	err := auth.SetURLValues(&values)
+	if err != nil {
+		return ApiResponse{}, err
+	}
+
+	return client.authRep(values)
 }
 
 //AuthRepKey - Authorize & Report for the API Key authentication pattern with service token
-func (client *ThreeScaleClient) AuthRepKey(userKey string, serviceToken string, serviceId string, arp AuthRepKeyParams) (ApiResponse, error) {
-	values := parseQueries(arp, url.Values{}, arp.Metrics, arp.Log)
+func (client *ThreeScaleClient) AuthRepUserKey(auth TokenAuth, userKey string, serviceId string, params AuthRepParams) (ApiResponse, error) {
+	values := parseQueries(params, url.Values{}, params.Metrics, params.Log)
 	values.Add("user_key", userKey)
-	values.Add("service_token", serviceToken)
 	values.Add("service_id", serviceId)
+
+	err := auth.SetURLValues(&values)
+	if err != nil {
+		return ApiResponse{}, err
+	}
 
 	return client.authRep(values)
 }
 
-//AuthRepProviderKey - Authorize & Report for the API Key authentication pattern with provider key
-func (client *ThreeScaleClient) AuthRepProviderKey(userKey string, providerKey string, serviceId string, arp AuthRepKeyParams) (ApiResponse, error) {
-	values := parseQueries(arp, url.Values{}, arp.Metrics, arp.Log)
-	values.Add("user_key", userKey)
-	values.Add("provider_key", providerKey)
-	values.Add("service_id", serviceId)
-
-	return client.authRep(values)
-}
-
-
-func (client *ThreeScaleClient) authRep(values url.Values)(ApiResponse, error) {
+func (client *ThreeScaleClient) authRep(values url.Values) (ApiResponse, error) {
 	var resp ApiResponse
 
 	req, err := client.buildGetReq(authRepEndpoint)
@@ -61,29 +58,26 @@ func (client *ThreeScaleClient) authRep(values url.Values)(ApiResponse, error) {
 	return resp, nil
 }
 
-
-
-// Create valid params for AuthRep
-func NewAuthRepParams(key string, referrer string, userId string) AuthRepParams {
+func NewAuthRepParamsAppID(key string, referrer string, userId string, metrics Metrics, log Log) AuthRepParams {
 	return AuthRepParams{
 		AuthorizeParams: AuthorizeParams{
 			AppKey:   key,
 			Referrer: referrer,
 			UserId:   userId,
-			Metrics:  make(Metrics),
+			Metrics:  metrics,
 		},
-		Log: make(Log),
+		Log: log,
 	}
 }
 
-// Create valid params for AuthRepKey
-func NewAuthRepKeyParams(referrer string, userId string) AuthRepKeyParams {
-	return AuthRepKeyParams{
-		AuthorizeKeyParams: AuthorizeKeyParams{
+func NewAuthRepParamsUserKey(referrer string, userId string, metrics Metrics, log Log) AuthRepParams {
+	return AuthRepParams{
+		AuthorizeParams: AuthorizeParams{
+			AppKey:   "",
 			Referrer: referrer,
 			UserId:   userId,
-			Metrics:  make(Metrics),
+			Metrics:  metrics,
 		},
-		Log: make(Log),
+		Log: log,
 	}
 }
