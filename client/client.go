@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -63,14 +62,6 @@ func (client *ThreeScaleClient) buildGetReq(ep string) (*http.Request, error) {
 // Call 3scale backend with the provided HTTP request
 func (client *ThreeScaleClient) doHttpReq(req *http.Request) (ApiResponse, error) {
 	var authRepRes ApiResponse
-
-	//TODO Remove debug code
-	requestDump, err := httputil.DumpRequest(req, true)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(requestDump))
-	// End TODO
 
 	resp, err := client.httpClient.Do(req)
 	defer resp.Body.Close()
