@@ -10,7 +10,7 @@ import (
 const reportEndpoint = "/transactions.xml"
 
 //ReportAppID - Report for the Application Id authentication pattern with serviceToken
-func (client *ThreeScaleClient) ReportAppID(auth TokenAuth, serviceId string, transactions ReportTransactions) (ApiResponse, error) {
+func (client *ThreeScaleClient) ReportAppID(auth TokenAuth, serviceId string, transactions ReportTransactions, extensions map[string]string) (ApiResponse, error) {
 	values := parseQueries(transactions, url.Values{}, transactions.Metrics, transactions.Log)
 
 	err := auth.SetURLValues(&values)
@@ -21,11 +21,11 @@ func (client *ThreeScaleClient) ReportAppID(auth TokenAuth, serviceId string, tr
 	values.Add("service_id", serviceId)
 	log.Errorf("%#v", values)
 
-	return client.report(values)
+	return client.report(values, extensions)
 }
 
 //ReportUserKey - Report for the API Key authentication pattern with service token
-func (client *ThreeScaleClient) ReportUserKey(auth TokenAuth, serviceId string, transactions ReportTransactions) (ApiResponse, error) {
+func (client *ThreeScaleClient) ReportUserKey(auth TokenAuth, serviceId string, transactions ReportTransactions, extensions map[string]string) (ApiResponse, error) {
 	values := parseQueries(transactions, url.Values{}, transactions.Metrics, transactions.Log)
 
 	err := auth.SetURLValues(&values)
@@ -34,13 +34,13 @@ func (client *ThreeScaleClient) ReportUserKey(auth TokenAuth, serviceId string, 
 	}
 
 	values.Add("service_id", serviceId)
-	return client.report(values)
+	return client.report(values, extensions)
 }
 
-func (client *ThreeScaleClient) report(values url.Values) (ApiResponse, error) {
+func (client *ThreeScaleClient) report(values url.Values, extensions map[string]string) (ApiResponse, error) {
 	var resp ApiResponse
 
-	req, err := client.buildGetReq(reportEndpoint, nil)
+	req, err := client.buildGetReq(reportEndpoint, extensions)
 	if err != nil {
 		return resp, errors.New(httpReqError.Error() + " for report")
 	}

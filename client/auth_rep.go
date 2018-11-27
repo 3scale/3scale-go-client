@@ -15,7 +15,7 @@ import (
 const authRepEndpoint = "/transactions/authrep.xml"
 
 //AuthRep - Authorize & Report for the Application Id authentication pattern
-func (client *ThreeScaleClient) AuthRepAppID(auth TokenAuth, appId string, serviceId string, params AuthRepParams) (ApiResponse, error) {
+func (client *ThreeScaleClient) AuthRepAppID(auth TokenAuth, appId string, serviceId string, params AuthRepParams, extensions map[string]string) (ApiResponse, error) {
 	values := parseQueries(params, url.Values{}, params.Metrics, params.Log)
 	values.Add("app_id", appId)
 	values.Add("service_id", serviceId)
@@ -25,11 +25,11 @@ func (client *ThreeScaleClient) AuthRepAppID(auth TokenAuth, appId string, servi
 		return ApiResponse{}, err
 	}
 
-	return client.authRep(values)
+	return client.authRep(values, extensions)
 }
 
 //AuthRepKey - Authorize & Report for the API Key authentication pattern with service token
-func (client *ThreeScaleClient) AuthRepUserKey(auth TokenAuth, userKey string, serviceId string, params AuthRepParams) (ApiResponse, error) {
+func (client *ThreeScaleClient) AuthRepUserKey(auth TokenAuth, userKey string, serviceId string, params AuthRepParams, extensions map[string]string) (ApiResponse, error) {
 	values := parseQueries(params, url.Values{}, params.Metrics, params.Log)
 	values.Add("user_key", userKey)
 	values.Add("service_id", serviceId)
@@ -39,13 +39,13 @@ func (client *ThreeScaleClient) AuthRepUserKey(auth TokenAuth, userKey string, s
 		return ApiResponse{}, err
 	}
 
-	return client.authRep(values)
+	return client.authRep(values, extensions)
 }
 
-func (client *ThreeScaleClient) authRep(values url.Values) (ApiResponse, error) {
+func (client *ThreeScaleClient) authRep(values url.Values, extensions map[string]string) (ApiResponse, error) {
 	var resp ApiResponse
 
-	req, err := client.buildGetReq(authRepEndpoint, nil)
+	req, err := client.buildGetReq(authRepEndpoint, extensions)
 	if err != nil {
 		return resp, errors.New(httpReqError.Error() + " for AuthRep")
 	}

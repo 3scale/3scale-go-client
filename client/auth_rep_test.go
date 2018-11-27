@@ -15,6 +15,7 @@ func TestAuthRep(t *testing.T) {
 	authRepInputs := []struct {
 		appId, svcId      string
 		auth              TokenAuth
+		extensions        map[string]string
 		expectErr         bool
 		expectSuccess     bool
 		expectReason      string
@@ -74,7 +75,7 @@ func TestAuthRep(t *testing.T) {
 			}
 		})
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.AuthRepAppID(input.auth, input.appId, input.svcId, input.buildParams())
+		resp, err := c.AuthRepAppID(input.auth, input.appId, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}
@@ -102,6 +103,7 @@ func TestAuthRepKey(t *testing.T) {
 	authRepInputs := []struct {
 		userKey, svcId    string
 		auth              TokenAuth
+		extensions        map[string]string
 		expectErr         bool
 		expectSuccess     bool
 		expectReason      string
@@ -301,7 +303,7 @@ func TestAuthRepKey(t *testing.T) {
 		})
 
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.AuthRepUserKey(input.auth, input.userKey, input.svcId, input.buildParams())
+		resp, err := c.AuthRepUserKey(input.auth, input.userKey, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}

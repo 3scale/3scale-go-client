@@ -19,6 +19,7 @@ func TestReportAppID(t *testing.T) {
 	authInputs := []struct {
 		svcId             string
 		auth              TokenAuth
+		extensions        map[string]string
 		expectErr         bool
 		expectSuccess     bool
 		expectReason      string
@@ -88,7 +89,7 @@ func TestReportAppID(t *testing.T) {
 			}
 		})
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.ReportAppID(input.auth, input.svcId, input.buildParams())
+		resp, err := c.ReportAppID(input.auth, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}

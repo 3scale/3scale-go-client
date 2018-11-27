@@ -14,6 +14,7 @@ func TestAuthorize(t *testing.T) {
 	fakeAppId, fakeServiceToken, fakeServiceId := "appId12345", "servicetoken54321", "555000"
 	authInputs := []struct {
 		appId, svcToken, svcId string
+		extensions             map[string]string
 		expectErr              bool
 		expectSuccess          bool
 		expectReason           string
@@ -80,7 +81,7 @@ func TestAuthorize(t *testing.T) {
 			}
 		})
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.Authorize(input.appId, input.svcToken, input.svcId, input.buildParams())
+		resp, err := c.Authorize(input.appId, input.svcToken, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}
@@ -107,6 +108,7 @@ func TestAuthorizeKey(t *testing.T) {
 	fakeMetricKey := "usage[hits]"
 	authRepInputs := []struct {
 		userKey, svcToken, svcId string
+		extensions               map[string]string
 		expectErr                bool
 		expectSuccess            bool
 		expectReason             string
@@ -278,7 +280,7 @@ func TestAuthorizeKey(t *testing.T) {
 		})
 
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.AuthorizeKey(input.userKey, input.svcToken, input.svcId, input.buildParams())
+		resp, err := c.AuthorizeKey(input.userKey, input.svcToken, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}

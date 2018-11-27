@@ -9,10 +9,10 @@ import (
 const authzEndpoint = "/transactions/authorize.xml"
 
 //Authorize - Read-only operation to authorize an application in the App Id authentication pattern.
-func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, serviceId string, arp AuthorizeParams) (ApiResponse, error) {
+func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, serviceId string, arp AuthorizeParams, extensions map[string]string) (ApiResponse, error) {
 	var authRepResp ApiResponse
 
-	req, err := client.buildGetReq(authzEndpoint, nil)
+	req, err := client.buildGetReq(authzEndpoint, extensions)
 	if err != nil {
 		return authRepResp, errors.New(httpReqError.Error() + " for Authorize")
 	}
@@ -31,10 +31,10 @@ func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, ser
 }
 
 //Authorize -  Read-only operation to authorize an application for the API Key authentication pattern
-func (client *ThreeScaleClient) AuthorizeKey(userKey string, serviceToken string, serviceId string, arp AuthorizeKeyParams) (ApiResponse, error) {
+func (client *ThreeScaleClient) AuthorizeKey(userKey string, serviceToken string, serviceId string, arp AuthorizeKeyParams, extensions map[string]string) (ApiResponse, error) {
 	var resp ApiResponse
 
-	req, err := client.buildGetReq(authzEndpoint, nil)
+	req, err := client.buildGetReq(authzEndpoint, extensions)
 	if err != nil {
 		return resp, errors.New(httpReqError.Error() + " for AuthRepKey")
 	}
