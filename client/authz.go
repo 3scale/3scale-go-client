@@ -12,7 +12,7 @@ const authzEndpoint = "/transactions/authorize.xml"
 func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, serviceId string, arp AuthorizeParams) (ApiResponse, error) {
 	var authRepResp ApiResponse
 
-	req, err := client.buildGetReq(authzEndpoint)
+	req, err := client.buildGetReq(authzEndpoint, nil)
 	if err != nil {
 		return authRepResp, errors.New(httpReqError.Error() + " for Authorize")
 	}
@@ -34,7 +34,7 @@ func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, ser
 func (client *ThreeScaleClient) AuthorizeKey(userKey string, serviceToken string, serviceId string, arp AuthorizeKeyParams) (ApiResponse, error) {
 	var resp ApiResponse
 
-	req, err := client.buildGetReq(authzEndpoint)
+	req, err := client.buildGetReq(authzEndpoint, nil)
 	if err != nil {
 		return resp, errors.New(httpReqError.Error() + " for AuthRepKey")
 	}

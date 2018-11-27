@@ -45,7 +45,7 @@ func (client *ThreeScaleClient) AuthRepUserKey(auth TokenAuth, userKey string, s
 func (client *ThreeScaleClient) authRep(values url.Values) (ApiResponse, error) {
 	var resp ApiResponse
 
-	req, err := client.buildGetReq(authRepEndpoint)
+	req, err := client.buildGetReq(authRepEndpoint, nil)
 	if err != nil {
 		return resp, errors.New(httpReqError.Error() + " for AuthRep")
 	}

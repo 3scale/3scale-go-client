@@ -40,7 +40,7 @@ func (client *ThreeScaleClient) ReportUserKey(auth TokenAuth, serviceId string, 
 func (client *ThreeScaleClient) report(values url.Values) (ApiResponse, error) {
 	var resp ApiResponse
 
-	req, err := client.buildGetReq(reportEndpoint)
+	req, err := client.buildGetReq(reportEndpoint, nil)
 	if err != nil {
 		return resp, errors.New(httpReqError.Error() + " for report")
 	}
