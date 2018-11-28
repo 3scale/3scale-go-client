@@ -2,13 +2,19 @@ package client
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"sort"
+	"strings"
 	"testing"
 	"time"
+	"unsafe"
 )
+
+var ext_tested bool
 
 // Mocking objects for HTTP tests
 type RoundTripFunc func(req *http.Request) *http.Response
@@ -77,4 +83,79 @@ func equals(tb testing.TB, exp, act interface{}) {
 		fmt.Printf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
 		tb.FailNow()
 	}
+}
+
+func getExtensions() map[string]string {
+	// ensure we at least return the extensions the first time we get called
+	if !ext_tested || rand.Intn(2) != 0 {
+		ext_tested = true
+		return map[string]string {
+			"no_body": "1",
+			"asingle;field": "and;single;value",
+			"many@@and==": "should@@befine==",
+			"a test&": "&ok",
+		}
+	} else {
+		return nil
+	}
+}
+
+// returns a randomly-ordered list of strings for extensions with format "key=value"
+func getExtensionsValue() []string {
+	expected := map[string]string{
+		"no_body": "1",
+		"asingle%3Bfield": "and%3Bsingle%3Bvalue",
+		"many%40%40and%3D%3D": "should%40%40befine%3D%3D",
+		"a+test%26": "%26ok",
+	}
+
+	exp := make([]string, 0, unsafe.Sizeof(expected))
+	// golang's iteration over maps randomizes order of kv's
+	for k, v := range expected {
+		exp = append(exp, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	return exp
+}
+
+func checkExtensions(req *http.Request) (bool, string) {
+	value := req.Header.Get("3scale-options")
+	expected := getExtensionsValue()
+
+	found := strings.Split(value, "&")
+
+	if compareUnorderedStringLists(found, expected) {
+		return true, ""
+	} else {
+		sort.Strings(expected)
+		sort.Strings(found)
+
+		return false, fmt.Sprintf("\nexpected extension header value %s\n" +
+			"                      but found %s",
+			strings.Join(expected, ", "), strings.Join(found, ", "))
+
+	}
+}
+
+func compareUnorderedStringLists(one []string, other []string) bool {
+	if len(one) != len(other) {
+		return false
+	}
+
+	for _, x := range one {
+		found := false
+
+		for _, y := range other {
+			if x == y {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return false
+		}
+	}
+
+	return true
 }
