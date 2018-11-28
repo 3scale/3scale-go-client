@@ -30,6 +30,7 @@ func TestReportAppID(t *testing.T) {
 		{
 			svcId:             fakeServiceId,
 			auth:              auth,
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 5,
@@ -46,6 +47,7 @@ func TestReportAppID(t *testing.T) {
 				Type:  "service_token",
 				Value: "servicetoken54321",
 			},
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -57,6 +59,7 @@ func TestReportAppID(t *testing.T) {
 				Type:  "service_token",
 				Value: "servicetoken54321",
 			},
+			extensions:        getExtensions(),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -70,6 +73,12 @@ func TestReportAppID(t *testing.T) {
 			params := req.URL.Query()
 			if input.expectParamLength != len(params) {
 				t.Fatalf("unexpected param length, expect %d got  %d", input.expectParamLength, len(params))
+			}
+
+			if input.extensions != nil {
+				if ok, err := checkExtensions(req); !ok {
+					t.Fatal(err)
+				}
 			}
 
 			queryAppId := params["app_id"][0]
