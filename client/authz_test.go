@@ -26,7 +26,7 @@ func TestAuthorize(t *testing.T) {
 			appId:             fakeAppId,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
@@ -36,7 +36,7 @@ func TestAuthorize(t *testing.T) {
 			appId:             "failme",
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -47,7 +47,7 @@ func TestAuthorize(t *testing.T) {
 			appId:             fakeAppId,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 6,
@@ -68,7 +68,7 @@ func TestAuthorize(t *testing.T) {
 			}
 
 			if input.extensions != nil {
-				if ok, err := checkExtensions(req); !ok {
+				if ok, err := checkExtensions(t, req); !ok {
 					t.Fatal(err)
 				}
 			}
@@ -129,7 +129,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -139,7 +139,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -149,7 +149,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          "invalid",
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -160,7 +160,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             "invalid",
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -171,7 +171,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           "invalid",
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectReason:      "user_key_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -182,7 +182,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
@@ -196,7 +196,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     false,
 			expectStatus:      409,
 			expectParamLength: 4,
@@ -211,7 +211,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           "failme",
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -222,7 +222,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 6,
@@ -244,7 +244,7 @@ func TestAuthorizeKey(t *testing.T) {
 			}
 
 			if input.extensions != nil {
-				if ok, err := checkExtensions(req); !ok {
+				if ok, err := checkExtensions(t, req); !ok {
 					t.Fatal(err)
 				}
 			}
