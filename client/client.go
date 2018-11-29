@@ -52,11 +52,39 @@ func NewThreeScale(backEnd *Backend, httpClient *http.Client) *ThreeScaleClient 
 }
 
 // Request builder for GET request to the provided endpoint
-func (client *ThreeScaleClient) buildGetReq(ep string) (*http.Request, error) {
+func (client *ThreeScaleClient) buildGetReq(ep string, extensions map[string]string) (*http.Request, error) {
 	path := &url.URL{Path: ep}
 	req, err := http.NewRequest("GET", client.backend.baseUrl.ResolveReference(path).String(), nil)
 	req.Header.Set("Accept", "application/xml")
+
+	if extensions != nil {
+		req.Header.Set("3scale-options", encodeExtensions(extensions))
+	}
+
 	return req, err
+}
+
+func encodeExtensions(extensions map[string]string) string {
+	var exts string
+
+	if extensions != nil {
+		for k, v := range extensions {
+			// the extensions mechanism requires escaping keys and values
+			// we are using QueryEscape because it escapes characters that
+			// PathEscape does not and are needed to disambiguate (ie. '=').
+			k = url.QueryEscape(k)
+			v = url.QueryEscape(v)
+
+			// add separator if needed
+			if exts != "" {
+				exts = exts + "&"
+			}
+
+			exts = exts + fmt.Sprintf("%s=%s", k, v)
+		}
+	}
+
+	return exts
 }
 
 // Call 3scale backend with the provided HTTP request

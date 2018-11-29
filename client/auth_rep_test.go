@@ -15,6 +15,7 @@ func TestAuthRep(t *testing.T) {
 	authRepInputs := []struct {
 		appId, svcId      string
 		auth              TokenAuth
+		extensions        map[string]string
 		expectErr         bool
 		expectSuccess     bool
 		expectReason      string
@@ -29,6 +30,7 @@ func TestAuthRep(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
@@ -41,6 +43,7 @@ func TestAuthRep(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -55,6 +58,12 @@ func TestAuthRep(t *testing.T) {
 			params := req.URL.Query()
 			if input.expectParamLength != len(params) {
 				t.Fatalf("unexpected param length, expect %d got  %d", input.expectParamLength, len(params))
+			}
+
+			if input.extensions != nil {
+				if ok, err := checkExtensions(req); !ok {
+					t.Fatal(err)
+				}
 			}
 
 			queryAppId := params["app_id"][0]
@@ -74,7 +83,7 @@ func TestAuthRep(t *testing.T) {
 			}
 		})
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.AuthRepAppID(input.auth, input.appId, input.svcId, input.buildParams())
+		resp, err := c.AuthRepAppID(input.auth, input.appId, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}
@@ -102,6 +111,7 @@ func TestAuthRepKey(t *testing.T) {
 	authRepInputs := []struct {
 		userKey, svcId    string
 		auth              TokenAuth
+		extensions        map[string]string
 		expectErr         bool
 		expectSuccess     bool
 		expectReason      string
@@ -116,6 +126,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -128,6 +139,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -140,6 +152,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: "invalid",
 			},
+			extensions:        getExtensions(),
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -153,6 +166,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -166,6 +180,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectReason:      "user_key_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -179,6 +194,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
@@ -195,6 +211,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectSuccess:     false,
 			expectStatus:      409,
 			expectParamLength: 4,
@@ -212,6 +229,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -225,6 +243,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 9,
@@ -244,6 +263,12 @@ func TestAuthRepKey(t *testing.T) {
 			params := req.URL.Query()
 			if input.expectParamLength != len(params) {
 				t.Fatalf("unexpected param length, expect %d got  %d", input.expectParamLength, len(params))
+			}
+
+			if input.extensions != nil {
+				if ok, err := checkExtensions(req); !ok {
+					t.Fatal(err)
+				}
 			}
 
 			queryUserKey := params["user_key"][0]
@@ -301,7 +326,7 @@ func TestAuthRepKey(t *testing.T) {
 		})
 
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.AuthRepUserKey(input.auth, input.userKey, input.svcId, input.buildParams())
+		resp, err := c.AuthRepUserKey(input.auth, input.userKey, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}

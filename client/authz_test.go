@@ -14,6 +14,7 @@ func TestAuthorize(t *testing.T) {
 	fakeAppId, fakeServiceToken, fakeServiceId := "appId12345", "servicetoken54321", "555000"
 	authInputs := []struct {
 		appId, svcToken, svcId string
+		extensions             map[string]string
 		expectErr              bool
 		expectSuccess          bool
 		expectReason           string
@@ -25,6 +26,7 @@ func TestAuthorize(t *testing.T) {
 			appId:             fakeAppId,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
@@ -34,6 +36,7 @@ func TestAuthorize(t *testing.T) {
 			appId:             "failme",
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -44,6 +47,7 @@ func TestAuthorize(t *testing.T) {
 			appId:             fakeAppId,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 6,
@@ -63,6 +67,12 @@ func TestAuthorize(t *testing.T) {
 				t.Fatalf("unexpected param length, expect %d got  %d", input.expectParamLength, len(params))
 			}
 
+			if input.extensions != nil {
+				if ok, err := checkExtensions(req); !ok {
+					t.Fatal(err)
+				}
+			}
+
 			queryAppId := params["app_id"][0]
 
 			if queryAppId == "failme" {
@@ -80,7 +90,7 @@ func TestAuthorize(t *testing.T) {
 			}
 		})
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.Authorize(input.appId, input.svcToken, input.svcId, input.buildParams())
+		resp, err := c.Authorize(input.appId, input.svcToken, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}
@@ -107,6 +117,7 @@ func TestAuthorizeKey(t *testing.T) {
 	fakeMetricKey := "usage[hits]"
 	authRepInputs := []struct {
 		userKey, svcToken, svcId string
+		extensions               map[string]string
 		expectErr                bool
 		expectSuccess            bool
 		expectReason             string
@@ -118,6 +129,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -127,6 +139,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -136,6 +149,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          "invalid",
+			extensions:        getExtensions(),
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -146,6 +160,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             "invalid",
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -156,6 +171,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           "invalid",
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectReason:      "user_key_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -166,6 +182,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
@@ -179,6 +196,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectSuccess:     false,
 			expectStatus:      409,
 			expectParamLength: 4,
@@ -193,6 +211,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           "failme",
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -203,6 +222,7 @@ func TestAuthorizeKey(t *testing.T) {
 			userKey:           fakeUserKey,
 			svcId:             fakeServiceId,
 			svcToken:          fakeServiceToken,
+			extensions:        getExtensions(),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 6,
@@ -221,6 +241,12 @@ func TestAuthorizeKey(t *testing.T) {
 			params := req.URL.Query()
 			if input.expectParamLength != len(params) {
 				t.Fatalf("unexpected param length, expect %d got  %d", input.expectParamLength, len(params))
+			}
+
+			if input.extensions != nil {
+				if ok, err := checkExtensions(req); !ok {
+					t.Fatal(err)
+				}
 			}
 
 			queryUserKey := params["user_key"][0]
@@ -278,7 +304,7 @@ func TestAuthorizeKey(t *testing.T) {
 		})
 
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.AuthorizeKey(input.userKey, input.svcToken, input.svcId, input.buildParams())
+		resp, err := c.AuthorizeKey(input.userKey, input.svcToken, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}
