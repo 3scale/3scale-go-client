@@ -30,7 +30,7 @@ func TestReportAppID(t *testing.T) {
 		{
 			svcId:             fakeServiceId,
 			auth:              auth,
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 5,
@@ -47,7 +47,7 @@ func TestReportAppID(t *testing.T) {
 				Type:  "service_token",
 				Value: "servicetoken54321",
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -59,7 +59,7 @@ func TestReportAppID(t *testing.T) {
 				Type:  "service_token",
 				Value: "servicetoken54321",
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -76,7 +76,7 @@ func TestReportAppID(t *testing.T) {
 			}
 
 			if input.extensions != nil {
-				if ok, err := checkExtensions(req); !ok {
+				if ok, err := checkExtensions(t, req); !ok {
 					t.Fatal(err)
 				}
 			}

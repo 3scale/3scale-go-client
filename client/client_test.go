@@ -85,7 +85,9 @@ func equals(tb testing.TB, exp, act interface{}) {
 	}
 }
 
-func getExtensions() map[string]string {
+func getExtensions(t *testing.T) map[string]string {
+	t.Helper()
+
 	// ensure we at least return the extensions the first time we get called
 	if !ext_tested || rand.Intn(2) != 0 {
 		ext_tested = true
@@ -118,7 +120,9 @@ func getExtensionsValue() []string {
 	return exp
 }
 
-func checkExtensions(req *http.Request) (bool, string) {
+func checkExtensions(t *testing.T, req *http.Request) (bool, string) {
+	t.Helper()
+
 	value := req.Header.Get("3scale-options")
 	expected := getExtensionsValue()
 

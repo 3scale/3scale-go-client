@@ -30,7 +30,7 @@ func TestAuthRep(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
@@ -43,7 +43,7 @@ func TestAuthRep(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -61,7 +61,7 @@ func TestAuthRep(t *testing.T) {
 			}
 
 			if input.extensions != nil {
-				if ok, err := checkExtensions(req); !ok {
+				if ok, err := checkExtensions(t, req); !ok {
 					t.Fatal(err)
 				}
 			}
@@ -126,7 +126,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -139,7 +139,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 3,
@@ -152,7 +152,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: "invalid",
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -166,7 +166,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectReason:      "service_token_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -180,7 +180,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectReason:      "user_key_invalid",
 			expectSuccess:     false,
 			expectStatus:      403,
@@ -194,7 +194,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 4,
@@ -211,7 +211,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     false,
 			expectStatus:      409,
 			expectParamLength: 4,
@@ -229,7 +229,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectErr:         true,
 			expectSuccess:     false,
 			expectStatus:      200,
@@ -243,7 +243,7 @@ func TestAuthRepKey(t *testing.T) {
 				Type:  serviceToken,
 				Value: fakeServiceToken,
 			},
-			extensions:        getExtensions(),
+			extensions:        getExtensions(t),
 			expectSuccess:     true,
 			expectStatus:      200,
 			expectParamLength: 9,
@@ -266,7 +266,7 @@ func TestAuthRepKey(t *testing.T) {
 			}
 
 			if input.extensions != nil {
-				if ok, err := checkExtensions(req); !ok {
+				if ok, err := checkExtensions(t, req); !ok {
 					t.Fatal(err)
 				}
 			}
