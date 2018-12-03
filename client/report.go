@@ -3,7 +3,6 @@ package client
 import (
 	"errors"
 	"fmt"
-	"istio.io/istio/pkg/log"
 	"net/url"
 )
 
@@ -19,7 +18,6 @@ func (client *ThreeScaleClient) ReportAppID(auth TokenAuth, serviceId string, tr
 	}
 
 	values.Add("service_id", serviceId)
-	log.Errorf("%#v", values)
 
 	return client.report(values, extensions)
 }
