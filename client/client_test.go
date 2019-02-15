@@ -47,6 +47,19 @@ func TestNewBackend(t *testing.T) {
 	}
 }
 
+// Tests the correct hostname is returned for a client remote end
+func TestGetPeer(t *testing.T) {
+	be, err := NewBackend("https", "www.test.com", 443)
+	if err != nil {
+		t.Fatalf("error creating client")
+	}
+	c := NewThreeScale(be, nil)
+	host := c.GetPeer()
+	if host != "www.test.com" {
+		t.Fatalf("unexpected hostname")
+	}
+}
+
 // Asserts correct dependency injection into client overwrites defaults
 func TestNewThreeScale(t *testing.T) {
 	validBe, err := NewBackend("https", "test.com", 443)
