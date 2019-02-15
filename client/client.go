@@ -51,6 +51,11 @@ func NewThreeScale(backEnd *Backend, httpClient *http.Client) *ThreeScaleClient 
 	return &ThreeScaleClient{backEnd, httpClient}
 }
 
+// GetPeer - a utility method that returns the remote hostname of the client
+func (client  *ThreeScaleClient) GetPeer() string {
+	return client.backend.host
+}
+
 // Request builder for GET request to the provided endpoint
 func (client *ThreeScaleClient) buildGetReq(ep string, extensions map[string]string) (*http.Request, error) {
 	path := &url.URL{Path: ep}
