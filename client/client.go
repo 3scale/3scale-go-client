@@ -146,6 +146,11 @@ func (r ApiResponse) GetLimitReset() *int {
 	return r.limitReset
 }
 
+// GetHierarchy - A list of children (methods) associated with a parent(metric)
+func (r ApiResponse) GetHierarchy() map[string][]string {
+	return r.hierarchy
+}
+
 // Add a metric to list of metrics to be reported
 // Returns error if provided value is non-positive and entry will be ignored
 func (m Metrics) Add(name string, value int) error {
