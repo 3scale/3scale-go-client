@@ -17,6 +17,7 @@ type ApiResponse struct {
 	StatusCode     int
 	limitRemaining *int
 	limitReset     *int
+	hierarchy      map[string][]string
 }
 
 // ApiResponseXML - response from backend API

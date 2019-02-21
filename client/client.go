@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -212,7 +213,30 @@ func getApiResp(r io.Reader) (ApiResponse, error) {
 			resp.Reason = apiResp.Code
 		}
 	}
+
+	if len(apiResp.Hierarchy.Metric) > 0 {
+		resp.hierarchy = make(map[string][]string, len(apiResp.Hierarchy.Metric))
+		for _, i := range apiResp.Hierarchy.Metric {
+			if i.Children != "" {
+				children := strings.Split(i.Children, " ")
+				for _, child := range children {
+					if !contains(child, resp.hierarchy[i.Name]) {
+						resp.hierarchy[i.Name] = append(resp.hierarchy[i.Name], child)
+					}
+				}
+			}
+		}
+	}
 	return resp, nil
+}
+
+func contains(key string, in []string) bool {
+	for _, i := range in {
+		if key == i {
+			return true
+		}
+	}
+	return false
 }
 
 // Helper function to read custom tags and add them to query string
