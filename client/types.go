@@ -21,10 +21,11 @@ type ApiResponse struct {
 
 // ApiResponseXML - response from backend API
 type ApiResponseXML struct {
-	Name       xml.Name `xml:",any"`
-	Authorized bool     `xml:"authorized,omitempty"`
-	Reason     string   `xml:"reason,omitempty"`
-	Code       string   `xml:"code,attr,omitempty"`
+	Name       xml.Name  `xml:",any"`
+	Authorized bool      `xml:"authorized,omitempty"`
+	Reason     string    `xml:"reason,omitempty"`
+	Code       string    `xml:"code,attr,omitempty"`
+	Hierarchy  Hierarchy `xml:"hierarchy"`
 }
 
 // AuthorizeParams - optional parameters for the Authorize API - App ID pattern
@@ -80,6 +81,14 @@ type ReportTransactions struct {
 type TokenAuth struct {
 	Type  string
 	Value string
+}
+
+// Hierarchy encapsulates the return value when using "hierarchy" extension
+type Hierarchy struct {
+	Metric []struct {
+		Name     string `xml:"name,attr"`
+		Children string `xml:"children,attr"`
+	} `xml:"metric"`
 }
 
 func (auth *TokenAuth) SetURLValues(values *url.Values) error {
