@@ -23,7 +23,7 @@ func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, ser
 	values.Add("service_id", serviceId)
 
 	req.URL.RawQuery = values.Encode()
-	authRepRes, err := client.doHttpReq(req)
+	authRepRes, err := client.doHttpReq(req, extensions)
 	if err != nil {
 		return authRepResp, fmt.Errorf("error calling 3Scale API - %s", err.Error())
 	}
@@ -45,7 +45,7 @@ func (client *ThreeScaleClient) AuthorizeKey(userKey string, serviceToken string
 	values.Add("service_id", serviceId)
 
 	req.URL.RawQuery = values.Encode()
-	resp, err = client.doHttpReq(req)
+	resp, err = client.doHttpReq(req, extensions)
 	if err != nil {
 		return resp, fmt.Errorf("error calling 3Scale API - %s", err.Error())
 	}

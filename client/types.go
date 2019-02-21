@@ -12,9 +12,11 @@ const providerKey = "provider_key"
 
 // ApiResponse - formatted response to client
 type ApiResponse struct {
-	Reason     string
-	Success    bool
-	StatusCode int
+	Reason         string
+	Success        bool
+	StatusCode     int
+	limitRemaining *int
+	limitReset     *int
 }
 
 // ApiResponseXML - response from backend API
@@ -80,7 +82,7 @@ type TokenAuth struct {
 	Value string
 }
 
-func (auth *TokenAuth) SetURLValues(values *url.Values) (error) {
+func (auth *TokenAuth) SetURLValues(values *url.Values) error {
 
 	switch auth.Type {
 	case serviceToken:
