@@ -104,11 +104,11 @@ func getExtensions(t *testing.T) map[string]string {
 	// ensure we at least return the extensions the first time we get called
 	if !ext_tested || rand.Intn(2) != 0 {
 		ext_tested = true
-		return map[string]string {
-			"no_body": "1",
+		return map[string]string{
+			"no_body":       "1",
 			"asingle;field": "and;single;value",
-			"many@@and==": "should@@befine==",
-			"a test&": "&ok",
+			"many@@and==":   "should@@befine==",
+			"a test&":       "&ok",
 		}
 	} else {
 		return nil
@@ -118,10 +118,10 @@ func getExtensions(t *testing.T) map[string]string {
 // returns a randomly-ordered list of strings for extensions with format "key=value"
 func getExtensionsValue() []string {
 	expected := map[string]string{
-		"no_body": "1",
-		"asingle%3Bfield": "and%3Bsingle%3Bvalue",
+		"no_body":             "1",
+		"asingle%3Bfield":     "and%3Bsingle%3Bvalue",
 		"many%40%40and%3D%3D": "should%40%40befine%3D%3D",
-		"a+test%26": "%26ok",
+		"a+test%26":           "%26ok",
 	}
 
 	exp := make([]string, 0, unsafe.Sizeof(expected))
@@ -147,7 +147,7 @@ func checkExtensions(t *testing.T, req *http.Request) (bool, string) {
 		sort.Strings(expected)
 		sort.Strings(found)
 
-		return false, fmt.Sprintf("\nexpected extension header value %s\n" +
+		return false, fmt.Sprintf("\nexpected extension header value %s\n"+
 			"                      but found %s",
 			strings.Join(expected, ", "), strings.Join(found, ", "))
 
