@@ -8,4 +8,6 @@ jobs:
       - checkout
       - run:
           name: Run unit tests
-          command: make test_coverage
+          command: |
+            make test_coverage
+            bash <(curl -s https://codecov.io/bash)
