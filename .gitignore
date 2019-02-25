@@ -1,3 +1,4 @@
 client/.idea/*
 .idea/*
 *.out
+coverage.txt
