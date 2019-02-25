@@ -113,36 +113,47 @@ func (client *ThreeScaleClient) doHttpReq(req *http.Request, ext map[string]stri
 		return authRepRes, err
 	}
 
+	authRepRes.StatusCode = resp.StatusCode
+
 	if ext != nil {
 		if _, ok := ext[limitExtensions]; ok {
+			authRepRes.RateLimits = &RateLimits{}
 			if limitRem := resp.Header[limitRemainingHeaderKey][0]; limitRem != "" {
-				remainingLimit, _ := strconv.Atoi(limitRem)
-				authRepRes.limitRemaining = &remainingLimit
+				remainingLimit, err := strconv.Atoi(limitRem)
+				if err != nil {
+					authRepRes.RateLimits = nil
+					goto out
+				}
+				authRepRes.RateLimits.limitRemaining = remainingLimit
 			}
 
 			if limReset := resp.Header[limitResetHeaderKey][0]; limReset != "" {
-				resetLimit, _ := strconv.Atoi(limReset)
-				authRepRes.limitReset = &resetLimit
+				resetLimit, err := strconv.Atoi(limReset)
+				if err != nil {
+					authRepRes.RateLimits = nil
+					goto out
+				}
+				authRepRes.RateLimits.limitReset = resetLimit
 			}
 		}
 	}
 
-	authRepRes.StatusCode = resp.StatusCode
+out:
 	return authRepRes, nil
 }
 
 // GetLimitRemaining - An integer stating the amount of hits left for the full combination of metrics authorized in this call
 // before the rate limiting logic would start denying authorizations for the current period.
-// A negative integer value means there is no limit in the amount of hits.
+// A value of -1 indicates there is no limit in the amount of hits.
 // Nil value will indicate the extension has not been used.
-func (r ApiResponse) GetLimitRemaining() *int {
+func (r RateLimits) GetLimitRemaining() int {
 	return r.limitRemaining
 }
 
 // GetLimitReset - An integer stating the amount of seconds left for the current limiting period to elapse.
-// A negative integer value means there is no limit in time.
+// A value of -1 indicates there i is no limit in time.
 // Nil value will indicate the extension has not been used.
-func (r ApiResponse) GetLimitReset() *int {
+func (r RateLimits) GetLimitReset() int {
 	return r.limitReset
 }
 

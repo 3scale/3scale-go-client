@@ -12,12 +12,12 @@ const providerKey = "provider_key"
 
 // ApiResponse - formatted response to client
 type ApiResponse struct {
-	Reason         string
-	Success        bool
-	StatusCode     int
-	limitRemaining *int
-	limitReset     *int
-	hierarchy      map[string][]string
+	Reason     string
+	Success    bool
+	StatusCode int
+	// nil value indicates 'limit_headers' extension not in use or parsing error with 3scale response.
+	RateLimits *RateLimits
+	hierarchy  map[string][]string
 }
 
 // ApiResponseXML - response from backend API
@@ -90,6 +90,12 @@ type Hierarchy struct {
 		Name     string `xml:"name,attr"`
 		Children string `xml:"children,attr"`
 	} `xml:"metric"`
+}
+
+// RateLimits encapsulates the return values when using the "limit_headers" extension
+type RateLimits struct {
+	limitRemaining int
+	limitReset     int
 }
 
 func (auth *TokenAuth) SetURLValues(values *url.Values) error {
