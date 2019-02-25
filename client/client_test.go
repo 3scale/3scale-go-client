@@ -1,7 +1,9 @@
 package client
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"path/filepath"
@@ -12,6 +14,8 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/3scale/3scale-go-client/fake"
 )
 
 var ext_tested bool
@@ -81,6 +85,92 @@ func TestNewThreeScale(t *testing.T) {
 		t.Fail()
 	}
 	equals(t, threeScaleTwo.backend, DefaultBackend())
+}
+
+// Asserts correct behaviour from response when specific extensions are enabled
+func TestExtensions(t *testing.T) {
+	const empty = ""
+
+	tokenAuth := TokenAuth{Type: serviceToken, Value: empty}
+
+	inputs := []struct {
+		name        string
+		extensions  map[string]string
+		xmlResponse string
+		headers     http.Header
+		// function which should error out or complete if no error detected
+		isOK func(r ApiResponse, e error)
+	}{
+		{
+			name:        "Test Hierarchy Extension",
+			extensions:  map[string]string{"hierarchy": "1"},
+			xmlResponse: fake.GetHierarchyEnabledResponse(),
+			isOK: func(r ApiResponse, e error) {
+				if e != nil {
+					t.Errorf("expected nil error")
+				}
+				if len(r.GetHierarchy()) != 1 {
+					t.Errorf("expected only one parent in hierarchy")
+				}
+				if len(r.GetHierarchy()["hits"]) != 3 {
+					t.Errorf("expected three children for hits metric")
+				}
+
+			},
+			headers: make(http.Header),
+		},
+		{
+			name:        "Test Limit Extension",
+			extensions:  map[string]string{"limit_headers": "1"},
+			xmlResponse: fake.GetAuthSuccess(),
+			isOK: func(r ApiResponse, e error) {
+				if e != nil {
+					t.Errorf("expected nil error")
+				}
+
+				if limRem := r.RateLimits.GetLimitRemaining(); limRem != 10 {
+					t.Errorf("unexpected limit parsing - limit remaining")
+				}
+
+				if limRes := r.RateLimits.GetLimitReset(); limRes != 500 {
+					t.Errorf("unexpected limit parsing - limit reset")
+				}
+			},
+			headers: http.Header{limitRemainingHeaderKey: []string{"10"}, limitResetHeaderKey: []string{"500"}},
+		},
+	}
+	for _, input := range inputs {
+		t.Run(input.name, func(t *testing.T) {
+			httpClient := NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(input.xmlResponse)),
+					Header:     input.headers,
+				}
+			})
+			c := threeScaleTestClient(httpClient)
+
+			r, err := c.AuthRepAppID(tokenAuth, empty, empty, AuthRepParams{}, input.extensions)
+			input.isOK(r, err)
+
+			r, err = c.AuthRepUserKey(tokenAuth, empty, empty, AuthRepParams{}, input.extensions)
+			input.isOK(r, err)
+
+			r, err = c.Authorize(empty, empty, empty, AuthorizeParams{}, input.extensions)
+			input.isOK(r, err)
+
+			r, err = c.AuthorizeKey(empty, empty, empty, AuthorizeKeyParams{}, input.extensions)
+			input.isOK(r, err)
+
+			r, err = c.ReportAppID(tokenAuth, empty, ReportTransactions{}, input.extensions)
+			input.isOK(r, err)
+
+			r, err = c.ReportUserKey(tokenAuth, empty, ReportTransactions{}, input.extensions)
+			input.isOK(r, err)
+		})
+
+	}
+
 }
 
 // Returns a default client for testing
