@@ -51,7 +51,7 @@ func (client *ThreeScaleClient) authRep(values url.Values, extensions map[string
 	}
 
 	req.URL.RawQuery = values.Encode()
-	resp, err = client.doHttpReq(req)
+	resp, err = client.doHttpReq(req, extensions)
 	if err != nil {
 		return resp, fmt.Errorf("error calling 3Scale API - %s", err.Error())
 	}

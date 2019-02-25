@@ -46,3 +46,30 @@ func GetLimitExceededResp() string {
   </usage_reports>
 </status>`
 }
+
+// Get mock response with hierarchy extension enabled
+func GetHierarchyEnabledResponse() string {
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<status>
+   <authorized>true</authorized>
+   <plan>Basic</plan>
+   <usage_reports>
+      <usage_report metric="hits" period="minute">
+         <period_start>2019-02-22 14:32:00 +0000</period_start>
+         <period_end>2019-02-22 14:33:00 +0000</period_end>
+         <max_value>4</max_value>
+         <current_value>1</current_value>
+      </usage_report>
+      <usage_report metric="test_metric" period="week">
+         <period_start>2019-02-18 00:00:00 +0000</period_start>
+         <period_end>2019-02-25 00:00:00 +0000</period_end>
+         <max_value>6</max_value>
+         <current_value>0</current_value>
+      </usage_report>
+   </usage_reports>
+   <hierarchy>
+      <metric name="hits" children="example sample test" />
+      <metric name="test_metric" children="" />
+   </hierarchy>
+</status>`
+}

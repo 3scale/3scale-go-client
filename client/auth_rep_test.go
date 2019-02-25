@@ -109,6 +109,7 @@ func TestAuthRepKey(t *testing.T) {
 	fakeUserKey, fakeServiceToken, fakeServiceId := "userkey12345", "servicetoken54321", "555000"
 	fakeMetricKey := "usage[hits]"
 	authRepInputs := []struct {
+		name string
 		userKey, svcId    string
 		auth              TokenAuth
 		extensions        map[string]string

@@ -9,11 +9,15 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 const (
-	defaultBackendUrl = "https://su1.3scale.net:443"
-	queryTag          = "query"
+	defaultBackendUrl       = "https://su1.3scale.net:443"
+	queryTag                = "query"
+	limitExtensions         = "limit_headers"
+	limitRemainingHeaderKey = "3scale-limit-remaining"
+	limitResetHeaderKey     = "3scale-limit-reset"
 )
 
 var httpReqError = errors.New("error building http request")
@@ -52,7 +56,7 @@ func NewThreeScale(backEnd *Backend, httpClient *http.Client) *ThreeScaleClient 
 }
 
 // GetPeer - a utility method that returns the remote hostname of the client
-func (client  *ThreeScaleClient) GetPeer() string {
+func (client *ThreeScaleClient) GetPeer() string {
 	return client.backend.host
 }
 
@@ -93,7 +97,7 @@ func encodeExtensions(extensions map[string]string) string {
 }
 
 // Call 3scale backend with the provided HTTP request
-func (client *ThreeScaleClient) doHttpReq(req *http.Request) (ApiResponse, error) {
+func (client *ThreeScaleClient) doHttpReq(req *http.Request, ext map[string]string) (ApiResponse, error) {
 	var authRepRes ApiResponse
 
 	resp, err := client.httpClient.Do(req)
@@ -108,8 +112,54 @@ func (client *ThreeScaleClient) doHttpReq(req *http.Request) (ApiResponse, error
 	if err != nil {
 		return authRepRes, err
 	}
+
 	authRepRes.StatusCode = resp.StatusCode
+
+	if ext != nil {
+		if _, ok := ext[limitExtensions]; ok {
+			authRepRes.RateLimits = &RateLimits{}
+			if limitRem := resp.Header[limitRemainingHeaderKey][0]; limitRem != "" {
+				remainingLimit, err := strconv.Atoi(limitRem)
+				if err != nil {
+					authRepRes.RateLimits = nil
+					goto out
+				}
+				authRepRes.RateLimits.limitRemaining = remainingLimit
+			}
+
+			if limReset := resp.Header[limitResetHeaderKey][0]; limReset != "" {
+				resetLimit, err := strconv.Atoi(limReset)
+				if err != nil {
+					authRepRes.RateLimits = nil
+					goto out
+				}
+				authRepRes.RateLimits.limitReset = resetLimit
+			}
+		}
+	}
+
+out:
 	return authRepRes, nil
+}
+
+// GetLimitRemaining - An integer stating the amount of hits left for the full combination of metrics authorized in this call
+// before the rate limiting logic would start denying authorizations for the current period.
+// A value of -1 indicates there is no limit in the amount of hits.
+// Nil value will indicate the extension has not been used.
+func (r RateLimits) GetLimitRemaining() int {
+	return r.limitRemaining
+}
+
+// GetLimitReset - An integer stating the amount of seconds left for the current limiting period to elapse.
+// A value of -1 indicates there i is no limit in time.
+// Nil value will indicate the extension has not been used.
+func (r RateLimits) GetLimitReset() int {
+	return r.limitReset
+}
+
+// GetHierarchy - A list of children (methods) associated with a parent(metric)
+func (r ApiResponse) GetHierarchy() map[string][]string {
+	return r.hierarchy
 }
 
 // Add a metric to list of metrics to be reported
@@ -179,7 +229,30 @@ func getApiResp(r io.Reader) (ApiResponse, error) {
 			resp.Reason = apiResp.Code
 		}
 	}
+
+	if len(apiResp.Hierarchy.Metric) > 0 {
+		resp.hierarchy = make(map[string][]string, len(apiResp.Hierarchy.Metric))
+		for _, i := range apiResp.Hierarchy.Metric {
+			if i.Children != "" {
+				children := strings.Split(i.Children, " ")
+				for _, child := range children {
+					if !contains(child, resp.hierarchy[i.Name]) {
+						resp.hierarchy[i.Name] = append(resp.hierarchy[i.Name], child)
+					}
+				}
+			}
+		}
+	}
 	return resp, nil
+}
+
+func contains(key string, in []string) bool {
+	for _, i := range in {
+		if key == i {
+			return true
+		}
+	}
+	return false
 }
 
 // Helper function to read custom tags and add them to query string
