@@ -118,7 +118,7 @@ func (client *ThreeScaleClient) doHttpReq(req *http.Request, ext map[string]stri
 	if ext != nil {
 		if _, ok := ext[limitExtensions]; ok {
 			authRepRes.RateLimits = &RateLimits{}
-			if limitRem := resp.Header[limitRemainingHeaderKey][0]; limitRem != "" {
+			if limitRem := resp.Header.Get(limitRemainingHeaderKey); limitRem != "" {
 				remainingLimit, err := strconv.Atoi(limitRem)
 				if err != nil {
 					authRepRes.RateLimits = nil
@@ -127,7 +127,7 @@ func (client *ThreeScaleClient) doHttpReq(req *http.Request, ext map[string]stri
 				authRepRes.RateLimits.limitRemaining = remainingLimit
 			}
 
-			if limReset := resp.Header[limitResetHeaderKey][0]; limReset != "" {
+			if limReset := resp.Header.Get(limitResetHeaderKey); limReset != "" {
 				resetLimit, err := strconv.Atoi(limReset)
 				if err != nil {
 					authRepRes.RateLimits = nil
