@@ -136,7 +136,8 @@ func TestExtensions(t *testing.T) {
 					t.Errorf("unexpected limit parsing - limit reset")
 				}
 			},
-			headers: http.Header{limitRemainingHeaderKey: []string{"10"}, limitResetHeaderKey: []string{"500"}},
+			headers: http.Header{http.CanonicalHeaderKey(limitRemainingHeaderKey): []string{"10"},
+				http.CanonicalHeaderKey(limitResetHeaderKey): []string{"500"}},
 		},
 	}
 	for _, input := range inputs {
