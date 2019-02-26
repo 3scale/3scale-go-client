@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/xml"
-	"errors"
 	"net/http"
 	"net/url"
 )
@@ -98,19 +97,18 @@ type RateLimits struct {
 	limitReset     int
 }
 
-func (auth *TokenAuth) SetURLValues(values *url.Values) error {
+type AppID struct {
+	ID string
+	//Optional AppKey
+	AppKey string
+}
 
-	switch auth.Type {
-	case serviceToken:
-		values.Add("service_token", auth.Value)
-		return nil
+type Application struct {
+	AppID   AppID
+	UserKey string
+}
 
-	case providerKey:
-		values.Add("provider_key", auth.Value)
-		return nil
-
-	default:
-		return errors.New("invalid token type value")
-	}
-
+type Request struct {
+	Application Application
+	Credentials TokenAuth
 }
