@@ -201,6 +201,21 @@ func (l Log) convert() map[string]string {
 	return formatted
 }
 
+func (auth *TokenAuth) SetURLValues(values *url.Values) error {
+	switch auth.Type {
+	case serviceToken:
+		values.Add("service_token", auth.Value)
+		return nil
+
+	case providerKey:
+		values.Add("provider_key", auth.Value)
+		return nil
+
+	default:
+		return errors.New("invalid token type value")
+	}
+}
+
 // Verifies a custom backend is valid
 func verifyBackendUrl(urlToCheck string) (*url.URL, error) {
 	url2, err := url.ParseRequestURI(urlToCheck)

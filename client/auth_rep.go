@@ -14,7 +14,20 @@ import (
 
 const authRepEndpoint = "/transactions/authrep.xml"
 
-//AuthRep - Authorize & Report for the Application Id authentication pattern
+// AuthRep - Wrapper function to allow the client to determine, by parsing the provided data, what 3scale API should be called.
+// Note if both application types are provided then user_key authentication is prioritised.
+func (client *ThreeScaleClient) AuthRep(req Request, serviceId string, params AuthRepParams, extensions map[string]string) (ApiResponse, error) {
+	if req.Application.UserKey != "" {
+		return client.AuthRepUserKey(req.Credentials, req.Application.UserKey, serviceId, params, extensions)
+	}
+
+	if appKey := req.Application.AppID.AppKey; appKey != "" {
+		params.AppKey = appKey
+	}
+	return client.AuthRepAppID(req.Credentials, req.Application.AppID.ID, serviceId, params, extensions)
+}
+
+//AuthRepAppID - Authorize & Report for the Application Id authentication pattern
 func (client *ThreeScaleClient) AuthRepAppID(auth TokenAuth, appId string, serviceId string, params AuthRepParams, extensions map[string]string) (ApiResponse, error) {
 	values := parseQueries(params, url.Values{}, params.Metrics, params.Log)
 	values.Add("app_id", appId)
