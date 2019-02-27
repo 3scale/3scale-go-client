@@ -174,6 +174,62 @@ func TestExtensions(t *testing.T) {
 
 }
 
+func TestGetUsageReports(t *testing.T) {
+	const empty = ""
+	tokenAuth := TokenAuth{Type: serviceToken, Value: empty}
+	extension := make(map[string]string, 0)
+
+	httpClient := NewTestClient(func(req *http.Request) *http.Response {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetHierarchyEnabledResponse())),
+			Header:     make(http.Header),
+		}
+	})
+	c := threeScaleTestClient(httpClient)
+
+	validate := func(r ApiResponse, e error) {
+		reports := r.GetUsageReports()
+
+		if len(reports) != 2 {
+			t.Fatalf("expected two metrics to be contained in map")
+		}
+		if hits, ok := reports["hits"]; ok {
+			if hits.MaxValue != 4 || hits.CurrentValue != 1 {
+				t.Fatalf("unexpected current values for hits limits")
+			}
+
+			if hits.Period != Minute {
+				t.Fatalf("unexpcted period for hits")
+			}
+
+			if hits.PeriodStart != 1550845920 || hits.PeriodEnd != 1550845980 {
+				t.Fatalf("unexpected epoch results")
+			}
+		} else {
+			t.Fatalf("expected hits usage to be reported")
+		}
+	}
+
+	r, err := c.AuthRepAppID(tokenAuth, empty, empty, AuthRepParams{}, extension)
+	validate(r, err)
+
+	r, err = c.AuthRepUserKey(tokenAuth, empty, empty, AuthRepParams{}, extension)
+	validate(r, err)
+
+	r, err = c.Authorize(empty, empty, empty, AuthorizeParams{}, extension)
+	validate(r, err)
+
+	r, err = c.AuthorizeKey(empty, empty, empty, AuthorizeKeyParams{}, extension)
+	validate(r, err)
+
+	r, err = c.ReportAppID(tokenAuth, empty, ReportTransactions{}, extension)
+	validate(r, err)
+
+	r, err = c.ReportUserKey(tokenAuth, empty, ReportTransactions{}, extension)
+	validate(r, err)
+}
+
 // Returns a default client for testing
 func threeScaleTestClient(hc *http.Client) *ThreeScaleClient {
 	client := NewThreeScale(DefaultBackend(), hc)

@@ -10,15 +10,19 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
 	defaultBackendUrl       = "https://su1.3scale.net:443"
 	queryTag                = "query"
-	limitExtensions         = "limit_headers"
+	LimitExtension          = "limit_headers"
 	limitRemainingHeaderKey = "3scale-limit-remaining"
 	limitResetHeaderKey     = "3scale-limit-reset"
 )
+
+// a parsable time format used to convert Ruby time to time type
+const timeLayout = "2006-01-02 15:04:05 -0700"
 
 var httpReqError = errors.New("error building http request")
 
@@ -116,7 +120,7 @@ func (client *ThreeScaleClient) doHttpReq(req *http.Request, ext map[string]stri
 	authRepRes.StatusCode = resp.StatusCode
 
 	if ext != nil {
-		if _, ok := ext[limitExtensions]; ok {
+		if _, ok := ext[LimitExtension]; ok {
 			authRepRes.RateLimits = &RateLimits{}
 			if limitRem := resp.Header.Get(limitRemainingHeaderKey); limitRem != "" {
 				remainingLimit, err := strconv.Atoi(limitRem)
@@ -160,6 +164,11 @@ func (r RateLimits) GetLimitReset() int {
 // GetHierarchy - A list of children (methods) associated with a parent(metric)
 func (r ApiResponse) GetHierarchy() map[string][]string {
 	return r.hierarchy
+}
+
+// GetUsageReports - List of usage reports - list will be empty if no limits set
+func (r ApiResponse) GetUsageReports() UsageReports {
+	return r.usageReports
 }
 
 // Add a metric to list of metrics to be reported
@@ -216,6 +225,29 @@ func (auth *TokenAuth) SetURLValues(values *url.Values) error {
 	}
 }
 
+// converts xml response into usefully formatted type
+func (ur UsageReportXML) convert() (UsageReport, error) {
+	var err error
+	report := UsageReport{
+		Period:       ur.Period,
+		MaxValue:     ur.MaxValue,
+		CurrentValue: ur.CurrentValue,
+	}
+
+	if t, err := time.Parse(timeLayout, ur.PeriodStart); err != nil {
+		return report, err
+	} else {
+		report.PeriodStart = t.Unix()
+	}
+
+	if t, err := time.Parse(timeLayout, ur.PeriodEnd); err != nil {
+		return report, err
+	} else {
+		report.PeriodEnd = t.Unix()
+	}
+	return report, err
+}
+
 // Verifies a custom backend is valid
 func verifyBackendUrl(urlToCheck string) (*url.URL, error) {
 	url2, err := url.ParseRequestURI(urlToCheck)
@@ -237,6 +269,18 @@ func getApiResp(r io.Reader) (ApiResponse, error) {
 		return resp, err
 	}
 	resp.Success = apiResp.Authorized
+
+	resp.usageReports = make(UsageReports, len(apiResp.UsageReports.Reports))
+	for _, report := range apiResp.UsageReports.Reports {
+		converted, err := report.convert()
+		if err != nil {
+			// TODO - Consider adding a logging interface to client. Not much we can do here currently only ignore.
+			// Situation will only occur if we get a corrupt response from 3scale.
+		} else {
+			resp.usageReports[report.Metric] = converted
+		}
+	}
+
 	if !apiResp.Authorized {
 		if apiResp.Reason != "" {
 			resp.Reason = apiResp.Reason
