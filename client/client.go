@@ -28,22 +28,24 @@ var httpReqError = errors.New("error building http request")
 
 // Returns a Backend which will interact with a SaaS based 3scale backend
 func DefaultBackend() *Backend {
-	url2, err := verifyBackendUrl(defaultBackendUrl)
+	u, err := verifyBackendUrl(defaultBackendUrl)
 	if err != nil {
 		panic("error parsing default backend")
 	}
-	return &Backend{baseUrl: url2}
+
+	p, _ :=strconv.Atoi(u.Port())
+	return &Backend{u.Scheme, u.Host, p, u}
 }
 
 // Returns a custom Backend
 // Can be used for on-premise installations
 // Supported schemes are http and https
 func NewBackend(scheme string, host string, port int) (*Backend, error) {
-	url2, err := verifyBackendUrl(fmt.Sprintf("%s://%s:%d", scheme, host, port))
+	u, err := verifyBackendUrl(fmt.Sprintf("%s://%s:%d", scheme, host, port))
 	if err != nil {
 		return nil, err
 	}
-	return &Backend{scheme, host, port, url2}, nil
+	return &Backend{scheme, host, port, u}, nil
 }
 
 // Creates a ThreeScaleClient to communicate with the provided backend.
