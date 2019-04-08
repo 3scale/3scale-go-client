@@ -107,11 +107,11 @@ func (client *ThreeScaleClient) doHttpReq(req *http.Request, ext map[string]stri
 	var authRepRes ApiResponse
 
 	resp, err := client.httpClient.Do(req)
-	defer resp.Body.Close()
-
 	if err != nil {
 		return authRepRes, err
 	}
+
+	defer resp.Body.Close()
 
 	authRepRes, err = getApiResp(resp.Body)
 
