@@ -90,7 +90,7 @@ func TestAuthorize(t *testing.T) {
 			}
 		})
 		c := threeScaleTestClient(httpClient)
-		resp, err := c.Authorize(input.appId, input.svcToken, input.svcId, input.buildParams(), input.extensions)
+		resp, err := c.AuthorizeAppID(input.appId, input.svcToken, input.svcId, input.buildParams(), input.extensions)
 		if input.expectErr && err != nil {
 			continue
 		}

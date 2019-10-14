@@ -8,13 +8,24 @@ import (
 
 const authzEndpoint = "/transactions/authorize.xml"
 
-//Authorize - Read-only operation to authorize an application in the App Id authentication pattern.
-func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, serviceId string, arp AuthorizeParams, extensions map[string]string) (ApiResponse, error) {
+// Authorize - Wrapper function to allow the client to determine, by parsing the provided data, what 3scale API (auth) should be called.
+// Note if both application types are provided then user_key authentication is prioritised.
+func (client *ThreeScaleClient) Authorize(req Request, serviceId string, metrics Metrics, extensions map[string]string) (ApiResponse, error) {
+	if req.Application.UserKey != "" {
+		return client.AuthorizeKey(req.Application.UserKey, req.Credentials.Value, serviceId, AuthorizeKeyParams{Metrics:  metrics}, extensions)
+	}
+
+	return client.AuthorizeAppID(req.Application.AppID.ID, req.Credentials.Value, serviceId, AuthorizeParams{Metrics:  metrics}, extensions)
+}
+
+
+//AuthorizeAppID - Read-only operation to authorize an application in the App Id authentication pattern.
+func (client *ThreeScaleClient) AuthorizeAppID(appId string, serviceToken string, serviceId string, arp AuthorizeParams, extensions map[string]string) (ApiResponse, error) {
 	var authRepResp ApiResponse
 
 	req, err := client.buildGetReq(authzEndpoint, extensions)
 	if err != nil {
-		return authRepResp, errors.New(httpReqError.Error() + " for Authorize")
+		return authRepResp, errors.New(httpReqError.Error() + " for AuthorizeAppID")
 	}
 
 	values := parseQueries(arp, url.Values{}, arp.Metrics, nil)
@@ -30,13 +41,13 @@ func (client *ThreeScaleClient) Authorize(appId string, serviceToken string, ser
 	return authRepRes, nil
 }
 
-//Authorize -  Read-only operation to authorize an application for the API Key authentication pattern
+//AuthorizeKey -  Read-only operation to authorize an application for the API Key authentication pattern
 func (client *ThreeScaleClient) AuthorizeKey(userKey string, serviceToken string, serviceId string, arp AuthorizeKeyParams, extensions map[string]string) (ApiResponse, error) {
 	var resp ApiResponse
 
 	req, err := client.buildGetReq(authzEndpoint, extensions)
 	if err != nil {
-		return resp, errors.New(httpReqError.Error() + " for AuthRepKey")
+		return resp, errors.New(httpReqError.Error() + " for AuthorizeKey")
 	}
 
 	values := parseQueries(arp, url.Values{}, arp.Metrics, nil)
