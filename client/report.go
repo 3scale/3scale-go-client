@@ -8,6 +8,17 @@ import (
 
 const reportEndpoint = "/transactions.xml"
 
+// Report - Wrapper function to allow the client to determine, by parsing the provided data, what 3scale API (reporting) should be called.
+// Note if both application types are provided then user_key authentication is prioritised.
+func (client *ThreeScaleClient) Report(req Request, serviceId string, transactions ReportTransactions, extensions map[string]string) (ApiResponse, error) {
+	if req.Application.UserKey != "" {
+		return client.ReportUserKey(req.Credentials, serviceId, transactions, extensions)
+	}
+
+
+	return client.ReportAppID(req.Credentials, serviceId, transactions, extensions)
+}
+
 //ReportAppID - Report for the Application Id authentication pattern with serviceToken
 func (client *ThreeScaleClient) ReportAppID(auth TokenAuth, serviceId string, transactions ReportTransactions, extensions map[string]string) (ApiResponse, error) {
 	values := parseQueries(transactions, url.Values{}, transactions.Metrics, transactions.Log)

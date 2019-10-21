@@ -157,7 +157,7 @@ func TestExtensions(t *testing.T) {
 			r, err = c.AuthRepUserKey(tokenAuth, empty, empty, AuthRepParams{}, input.extensions)
 			input.isOK(r, err)
 
-			r, err = c.Authorize(empty, empty, empty, AuthorizeParams{}, input.extensions)
+			r, err = c.AuthorizeAppID(empty, empty, empty, AuthorizeParams{}, input.extensions)
 			input.isOK(r, err)
 
 			r, err = c.AuthorizeKey(empty, empty, empty, AuthorizeKeyParams{}, input.extensions)
@@ -217,7 +217,7 @@ func TestGetUsageReports(t *testing.T) {
 	r, err = c.AuthRepUserKey(tokenAuth, empty, empty, AuthRepParams{}, extension)
 	validate(r, err)
 
-	r, err = c.Authorize(empty, empty, empty, AuthorizeParams{}, extension)
+	r, err = c.AuthorizeAppID(empty, empty, empty, AuthorizeParams{}, extension)
 	validate(r, err)
 
 	r, err = c.AuthorizeKey(empty, empty, empty, AuthorizeKeyParams{}, extension)
