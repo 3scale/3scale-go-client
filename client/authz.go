@@ -15,7 +15,7 @@ func (client *ThreeScaleClient) Authorize(req Request, serviceId string, metrics
 		return client.AuthorizeKey(req.Application.UserKey, req.Credentials.Value, serviceId, AuthorizeKeyParams{Metrics:  metrics}, extensions)
 	}
 
-	return client.AuthorizeAppID(req.Application.AppID.ID, req.Credentials.Value, serviceId, AuthorizeParams{Metrics:  metrics}, extensions)
+	return client.AuthorizeAppID(req.Application.AppID.ID, req.Credentials.Value, serviceId, AuthorizeParams{AppKey:req.Application.AppID.AppKey, Metrics:  metrics}, extensions)
 }
 
 
