@@ -88,6 +88,7 @@ type ThreeScaleClient struct {
 
 type ReportTransactions struct {
 	AppID     string `query:"app_id"`
+	AppKey    string `query:"app_key"`
 	UserKey   string `query:"user_key"`
 	UserId    string `query:"user_id"`
 	Timestamp string `query:"timestamp"`
