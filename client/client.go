@@ -79,6 +79,18 @@ func (client *ThreeScaleClient) buildGetReq(ep string, extensions map[string]str
 	return req, err
 }
 
+func (client *ThreeScaleClient) buildPostReq(ep string, extensions map[string]string) (*http.Request, error) {
+	path := &url.URL{Path: ep}
+	req, err := http.NewRequest("POST", client.backend.baseUrl.ResolveReference(path).String(), nil)
+	req.Header.Set("Accept", "application/xml")
+
+	if extensions != nil {
+		req.Header.Set("3scale-options", encodeExtensions(extensions))
+	}
+
+	return req, err
+}
+
 func encodeExtensions(extensions map[string]string) string {
 	var exts string
 
