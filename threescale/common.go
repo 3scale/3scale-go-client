@@ -13,9 +13,7 @@ const (
 	defaultBackendUrl = "https://su1.3scale.net:443"
 	defaultTimeout    = 10 * time.Second
 
-	serviceTokenKey = "service_token"
-	providerKeyKey  = "provider_key"
-	serviceIDKey    = "service_id"
+	serviceIDKey = "service_id"
 
 	enableExtensions = "3scale-options"
 	// limitRemainingHeaderKey has a value set to the remaining calls in a current period
@@ -23,7 +21,6 @@ const (
 	// limitResetHeaderKey has a value set to an integer stating the amount of seconds left for the current limiting period to elapse
 	limitResetHeaderKey = "3scale-limit-reset"
 
-	badReqErrText  = "provided input failed validation"
 	httpReqErrText = "error building http request"
 
 	// a parsable time format used to convert Ruby time to time type
@@ -74,26 +71,8 @@ func (r *AuthorizeResponse) GetUsageReports() UsageReports {
 }
 
 func (ca ClientAuth) joinToValues(values url.Values) url.Values {
-	switch ca.Type {
-	case ServiceToken:
-		values.Add(serviceTokenKey, ca.Value)
-	case ProviderKey:
-		values.Add(providerKeyKey, ca.Value)
-
-	}
+	values.Add(string(ca.Type), ca.Value)
 	return values
-}
-
-// validate a ClientAuth has provided a known, named credential type and that the provided value is not empty
-func (ca ClientAuth) validate() error {
-	if ca.Type != 0 && ca.Type != 1 {
-		return fmt.Errorf("auth is invalid, unknown token type provided")
-	}
-
-	if ca.Value == "" {
-		return fmt.Errorf("auth is invalid, no value provided for token")
-	}
-	return nil
 }
 
 // Add takes a provided key and value and adds them to the Metric 'm'
@@ -144,16 +123,6 @@ func (m Metrics) convert() map[string]string {
 		formatted[fmt.Sprintf("usage[%s]", k)] = strconv.Itoa(v)
 	}
 	return formatted
-}
-
-//
-// validate that the Params receiver has been configured with at least the minimum values
-// required to make a successful call to 3scale backend
-func (p Params) validate() error {
-	if p.UserKey == "" && p.AppID == "" {
-		return fmt.Errorf("required authenticaton fields are missing - either user_key, or app_id must be set")
-	}
-	return nil
 }
 
 // joinToValues inspects the Params receiver for non-empty and values with json tags and appends them to the provided url.Values

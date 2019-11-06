@@ -16,7 +16,6 @@ const (
 )
 
 var (
-	badReqError  = errors.New(badReqErrText)
 	httpReqError = errors.New(httpReqErrText)
 )
 
@@ -32,11 +31,6 @@ func (c *Client) AuthRep(serviceID string, auth ClientAuth, request *Request) (*
 }
 
 func (c *Client) authOrAuthRep(endpoint, serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
-	// ensure provided input meets the minimum requirements for successful call to 3scale, wrap err if fails
-	if err := c.validateInputs(request.Params, auth); err != nil {
-		return nil, fmt.Errorf("%s - %s ", badReqError.Error(), err.Error())
-	}
-
 	// build out http request for the provided Request object
 	req, err := c.buildGetReq(c.baseURL+endpoint, request)
 	if err != nil {
@@ -119,18 +113,6 @@ func (c *Client) handleAuthorizeExtensions(resp *http.Response, response *Author
 		}
 	}
 	return response
-}
-
-func (c *Client) validateInputs(p Params, auth ClientAuth) error {
-	paramErr := p.validate()
-	if paramErr != nil {
-		return paramErr
-	}
-	authErr := auth.validate()
-	if authErr != nil {
-		return authErr
-	}
-	return nil
 }
 
 func (c *Client) inputToValues(svcID string, req *Request, clientAuth ClientAuth) url.Values {

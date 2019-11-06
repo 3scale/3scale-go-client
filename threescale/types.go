@@ -10,9 +10,9 @@ const (
 	// ClientAuth authentication types
 
 	// ServiceToken as a specific key for the service
-	ServiceToken AuthType = iota
+	ServiceToken AuthType = "service_token"
 	// ProviderKey for all services under an account
-	ProviderKey
+	ProviderKey AuthType = "provider_key"
 )
 
 const (
@@ -59,7 +59,7 @@ type AuthorizeResponse struct {
 
 // AuthType maps to a known client authentication pattern
 // Currently known and supported are 0=ServiceToken 1=ProviderKey
-type AuthType int
+type AuthType string
 
 // Client interacts with 3scale Service Management API
 type Client struct {
