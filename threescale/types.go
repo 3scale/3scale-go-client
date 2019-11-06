@@ -42,6 +42,7 @@ const (
 // Backend is the interface for the 3scale backend Service Management API
 type Backend interface {
 	Authorize(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error)
+	AuthRep(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error)
 }
 
 // AuthorizeResponse from 3scale backend when calling the Authorize and AuthRep endpoints

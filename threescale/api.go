@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	authzEndpoint = "/transactions/authorize.xml"
+	authzEndpoint   = "/transactions/authorize.xml"
+	authRepEndpoint = "/transactions/authrep.xml"
 )
 
 var (
@@ -19,14 +20,25 @@ var (
 	httpReqError = errors.New(httpReqErrText)
 )
 
+// Authorize is a read-only operation to authorize an application with the authentication provided in the requests params
 func (c *Client) Authorize(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
+	return c.authOrAuthRep(authzEndpoint, serviceID, auth, request)
+}
+
+// AuthRep should be used to authorize and report, in a single request
+// for an application with the authentication provided in the requests params
+func (c *Client) AuthRep(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
+	return c.authOrAuthRep(authRepEndpoint, serviceID, auth, request)
+}
+
+func (c *Client) authOrAuthRep(endpoint, serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
 	// ensure provided input meets the minimum requirements for successful call to 3scale, wrap err if fails
 	if err := c.validateInputs(request.Params, auth); err != nil {
 		return nil, fmt.Errorf("%s - %s ", badReqError.Error(), err.Error())
 	}
 
 	// build out http request for the provided Request object
-	req, err := c.buildGetReq(c.baseURL+authzEndpoint, request)
+	req, err := c.buildGetReq(c.baseURL+endpoint, request)
 	if err != nil {
 		return nil, fmt.Errorf("%s - %s ", httpReqError.Error(), err.Error())
 	}
@@ -137,6 +149,10 @@ func (c *Client) buildGetReq(url string, request *Request) (*http.Request, error
 
 	}
 	return c.annotateRequest(request, req), nil
+}
+
+func (c *Client) buildPostReq(url string) (*http.Request, error) {
+	return http.NewRequest(http.MethodPost, url, nil)
 }
 
 // annotateRequest modifies the *http.Request with required metadata and formatting for 3scale
