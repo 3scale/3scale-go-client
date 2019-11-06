@@ -36,32 +36,6 @@ func TestClient_Authorize(t *testing.T) {
 		injectClient   *http.Client
 	}{
 		{
-			name:         "Test expect failure invalid Params no app auth provided",
-			request:      &Request{},
-			expectErr:    true,
-			expectErrMsg: badReqErrText,
-		},
-		{
-			name: "Test expect failure invalid ClientAuth unknown auth type",
-			auth: ClientAuth{
-				Type:  3,
-				Value: "any",
-			},
-			request:      &Request{Params: Params{AppID: "any"}},
-			expectErr:    true,
-			expectErrMsg: badReqErrText,
-		},
-		{
-			name: "Test expect failure invalid ClientAuth empty value",
-			auth: ClientAuth{
-				Type:  ProviderKey,
-				Value: "",
-			},
-			request:      &Request{Params: Params{AppID: "any"}},
-			expectErr:    true,
-			expectErrMsg: badReqErrText,
-		},
-		{
 			name:         "Test expect failure bad url passed",
 			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
 			request:      &Request{Params: Params{AppID: "any"}},
