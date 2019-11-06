@@ -299,6 +299,63 @@ func TestClient_Authorize(t *testing.T) {
 	}
 }
 
+// because auth and auth rep essentially follow the same pattern, we can minimise the test in this instance
+// ensure our query param is correct and we are calling the correct endpoint
+func TestClient_AuthRep(t *testing.T) {
+	type input struct {
+		name           string
+		auth           ClientAuth
+		request        *Request
+		expectErr      bool
+		expectErrMsg   string
+		expectResponse *AuthorizeResponse
+		client         *Client
+		injectClient   *http.Client
+	}
+
+	fixture := input{
+		name: "Test params formatting",
+		auth: ClientAuth{
+			Type:  ServiceToken,
+			Value: "any",
+		},
+		request: &Request{
+			Params: Params{
+				AppID:  "any",
+				AppKey: "key",
+			},
+			Metrics: Metrics{"hits": 1, "other": 2},
+		},
+		expectResponse: &AuthorizeResponse{
+			Success:    true,
+			StatusCode: 200,
+		},
+		injectClient: NewTestClient(func(req *http.Request) *http.Response {
+			equals(t, req.URL.Path, authRepEndpoint)
+			// decodes to app_id=any&app_key=key&service_id=test&service_token=any&usage[hits]=1&usage[other]=2
+			expect := `app_id=any&app_key=key&service_id=test&service_token=any&usage%5Bhits%5D=1&usage%5Bother%5D=2`
+
+			if req.URL.RawQuery != expect {
+				t.Error("unexpected result in query string")
+			}
+
+			return &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
+				Header:     make(http.Header),
+			}
+		}),
+	}
+	const svcID = "test"
+	c := threeScaleTestClient(t, fixture.injectClient)
+	resp, err := c.AuthRep(svcID, fixture.auth, fixture.request)
+	if err != nil {
+		t.Error("unexpected error")
+	}
+	equals(t, fixture.expectResponse, resp)
+
+}
+
 // ******
 // Helpers
 
