@@ -13,6 +13,7 @@ import (
 const (
 	authzEndpoint   = "/transactions/authorize.xml"
 	authRepEndpoint = "/transactions/authrep.xml"
+	reportEndpoint  = "/transactions.xml"
 )
 
 var (
@@ -28,6 +29,24 @@ func (c *Client) Authorize(serviceID string, auth ClientAuth, request *Request) 
 // for an application with the authentication provided in the requests params
 func (c *Client) AuthRep(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
 	return c.authOrAuthRep(authRepEndpoint, serviceID, auth, request)
+}
+
+// Report the transactions to 3scale backend with the authentication provided in the requests params
+func (c *Client) Report(serviceID string, auth ClientAuth, reqs ...*Request) (*ReportResponse, error) {
+	values := auth.joinToValues(url.Values{serviceIDKey: []string{serviceID}})
+	for index, req := range reqs {
+		req.convertAndAddToTransactionValues(values, index, req)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+reportEndpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%s - %s ", httpReqError.Error(), err.Error())
+	}
+
+	if len(reqs) == 1 {
+		req = c.annotateRequest(reqs[0], req)
+	}
+	return c.doReportReq(req, values)
 }
 
 func (c *Client) authOrAuthRep(endpoint, serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
@@ -94,6 +113,35 @@ func (c *Client) doAuthorizeReq(req *http.Request, extensions Extensions) (*Auth
 	return c.handleAuthorizeExtensions(resp, response, extensions), nil
 }
 
+func (c *Client) doReportReq(req *http.Request, values url.Values) (*ReportResponse, error) {
+	req.URL.RawQuery = values.Encode()
+	req.Header.Set("Accept", "application/xml")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// ensure response is in 2xx range
+	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+		var xmlResponse ReportErrorXML
+		if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
+			return nil, err
+		}
+		return &ReportResponse{
+			Accepted:   false,
+			Reason:     xmlResponse.Code,
+			StatusCode: resp.StatusCode,
+		}, nil
+	}
+
+	return &ReportResponse{
+		Accepted:   true,
+		StatusCode: resp.StatusCode,
+	}, nil
+}
+
 // handleAuthorizeExtensions parses the provided http response for extensions and appends their information to the provided AuthorizeResponse.
 // Provides a best effort and if we hit an error during handling extensions, we do not tarnish the overall valid response,
 // instead treating it as corrupt and choose to remove the information learned from the extension
@@ -131,10 +179,6 @@ func (c *Client) buildGetReq(url string, request *Request) (*http.Request, error
 
 	}
 	return c.annotateRequest(request, req), nil
-}
-
-func (c *Client) buildPostReq(url string) (*http.Request, error) {
-	return http.NewRequest(http.MethodPost, url, nil)
 }
 
 // annotateRequest modifies the *http.Request with required metadata and formatting for 3scale

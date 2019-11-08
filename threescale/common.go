@@ -153,6 +153,21 @@ func (r *RateLimits) GetLimitReset() int {
 	return r.limitReset
 }
 
+// because the report endpoint takes batches, we must alter the typical formatting here and customise it slightly to
+// support reporting batches of transactions
+func (r *Request) convertAndAddToTransactionValues(reportValues url.Values, index int, req *Request) url.Values {
+	paramValues := req.Params.joinToValues(make(url.Values))
+	for k, v := range paramValues {
+		reportValues.Add(fmt.Sprintf("transactions[%d][%s]", index, k), v[0])
+	}
+
+	for k, v := range req.Metrics {
+		reportValues.Add(fmt.Sprintf("transactions[%d][usage][%s]", index, k), strconv.Itoa(v))
+	}
+
+	return reportValues
+}
+
 // convert an xml decoded response into a user friendly UsageReport
 func (ur UsageReportXML) convert() (UsageReport, error) {
 	var err error

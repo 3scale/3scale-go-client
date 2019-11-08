@@ -43,6 +43,7 @@ const (
 type Backend interface {
 	Authorize(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error)
 	AuthRep(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error)
+	Report(serviceID string, auth ClientAuth, requests ...*Request) (*ReportResponse, error)
 }
 
 // AuthorizeResponse from 3scale backend when calling the Authorize and AuthRep endpoints
@@ -133,6 +134,7 @@ type Request struct {
 	extensions Extensions
 }
 
+// ReportResponse is the object returned when a successful call to the Report API is made
 type ReportResponse struct {
 	Accepted bool
 	// Reason provides the reason for rejection in case the report failed - expect "" on 2xx StatusCode
@@ -182,6 +184,13 @@ type UsageReportXML struct {
 	PeriodEnd    string      `xml:"period_end"`
 	MaxValue     int         `xml:"max_value"`
 	CurrentValue int         `xml:"current_value"`
+}
+
+// ReportErrorXML captures the XML response from Report endpoint when not status 202
+type ReportErrorXML struct {
+	XMLName xml.Name `xml:"error"`
+	Text    string   `xml:",chardata"`
+	Code    string   `xml:"code,attr"`
 }
 
 // *****
