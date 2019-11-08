@@ -28,7 +28,7 @@ func TestClient_Authorize(t *testing.T) {
 	inputs := []struct {
 		name           string
 		auth           ClientAuth
-		request        *Request
+		transaction    *Transaction
 		expectErr      bool
 		expectErrMsg   string
 		expectResponse *AuthorizeResponse
@@ -38,7 +38,7 @@ func TestClient_Authorize(t *testing.T) {
 		{
 			name:         "Test expect failure bad url passed",
 			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			request:      &Request{Params: Params{AppID: "any"}},
+			transaction:  &Transaction{Params: Params{AppID: "any"}},
 			expectErr:    true,
 			expectErrMsg: httpReqErrText,
 			client: &Client{
@@ -50,7 +50,7 @@ func TestClient_Authorize(t *testing.T) {
 		{
 			name:         "Test expect failure simulated network error",
 			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			request:      &Request{Params: Params{AppID: "any"}},
+			transaction:  &Transaction{Params: Params{AppID: "any"}},
 			expectErr:    true,
 			expectErrMsg: "Timeout exceeded",
 			client: &Client{
@@ -63,7 +63,7 @@ func TestClient_Authorize(t *testing.T) {
 		{
 			name:         "Test expect failure simulated bad response from 3scale error",
 			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			request:      &Request{Params: Params{AppID: "any"}},
+			transaction:  &Transaction{Params: Params{AppID: "any"}},
 			expectErr:    true,
 			expectErrMsg: "EOF",
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
@@ -80,7 +80,7 @@ func TestClient_Authorize(t *testing.T) {
 				Type:  ServiceToken,
 				Value: "any",
 			},
-			request: &Request{
+			transaction: &Transaction{
 				Params: Params{
 					AppID:  "any",
 					AppKey: "key",
@@ -112,7 +112,7 @@ func TestClient_Authorize(t *testing.T) {
 				Type:  ServiceToken,
 				Value: "any",
 			},
-			request: &Request{
+			transaction: &Transaction{
 				Params: Params{
 					AppID: "any",
 				},
@@ -136,9 +136,9 @@ func TestClient_Authorize(t *testing.T) {
 			}),
 		},
 		{
-			name:    "Test usage reports",
-			auth:    ClientAuth{Type: ProviderKey, Value: "any"},
-			request: &Request{Params: Params{AppID: "any"}},
+			name:        "Test usage reports",
+			auth:        ClientAuth{Type: ProviderKey, Value: "any"},
+			transaction: &Transaction{Params: Params{AppID: "any"}},
 			expectResponse: &AuthorizeResponse{
 				Success:    true,
 				StatusCode: 200,
@@ -173,7 +173,7 @@ func TestClient_Authorize(t *testing.T) {
 		{
 			name: "Test hierarchy extension",
 			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			request: NewRequest(Params{AppID: "any"},
+			transaction: NewTransaction(Params{AppID: "any"},
 				WithExtensions(Extensions{HierarchyExtension: "1"})),
 			expectResponse: &AuthorizeResponse{
 				Success:    true,
@@ -198,7 +198,7 @@ func TestClient_Authorize(t *testing.T) {
 		{
 			name: "Test authorization extensions - rate limiting",
 			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			request: NewRequest(Params{AppID: "any"},
+			transaction: NewTransaction(Params{AppID: "any"},
 				WithExtensions(Extensions{LimitExtension: "1"})),
 			expectResponse: &AuthorizeResponse{
 				Success:    true,
@@ -229,7 +229,7 @@ func TestClient_Authorize(t *testing.T) {
 		{
 			name: "Test context is respected",
 			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			request: NewRequest(Params{AppID: "any"},
+			transaction: NewTransaction(Params{AppID: "any"},
 				WithContext(ctx)),
 			expectErr:    true,
 			expectErrMsg: "context deadline exceeded",
@@ -257,7 +257,7 @@ func TestClient_Authorize(t *testing.T) {
 				c = threeScaleTestClient(t, input.injectClient)
 			}
 
-			resp, err := c.Authorize(svcID, input.auth, input.request)
+			resp, err := c.Authorize(svcID, input.auth, input.transaction)
 			if err != nil {
 				if !input.expectErr {
 					t.Error("unexpected error")
@@ -279,7 +279,7 @@ func TestClient_AuthRep(t *testing.T) {
 	type input struct {
 		name           string
 		auth           ClientAuth
-		request        *Request
+		transaction    *Transaction
 		expectErr      bool
 		expectErrMsg   string
 		expectResponse *AuthorizeResponse
@@ -293,7 +293,7 @@ func TestClient_AuthRep(t *testing.T) {
 			Type:  ServiceToken,
 			Value: "any",
 		},
-		request: &Request{
+		transaction: &Transaction{
 			Params: Params{
 				AppID:  "any",
 				AppKey: "key",
@@ -322,7 +322,7 @@ func TestClient_AuthRep(t *testing.T) {
 	}
 	const svcID = "test"
 	c := threeScaleTestClient(t, fixture.injectClient)
-	resp, err := c.AuthRep(svcID, fixture.auth, fixture.request)
+	resp, err := c.AuthRep(svcID, fixture.auth, fixture.transaction)
 	if err != nil {
 		t.Error("unexpected error")
 	}
@@ -339,7 +339,7 @@ func TestClient_Report(t *testing.T) {
 	inputs := []struct {
 		name           string
 		auth           ClientAuth
-		request        []*Request
+		transactions   []*Transaction
 		expectErr      bool
 		expectErrMsg   string
 		expectResponse *ReportResponse
@@ -349,7 +349,7 @@ func TestClient_Report(t *testing.T) {
 		{
 			name:         "Test expect failure bad url passed",
 			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			request:      []*Request{&Request{Params: Params{AppID: "any"}}},
+			transactions: []*Transaction{&Transaction{Params: Params{AppID: "any"}}},
 			expectErr:    true,
 			expectErrMsg: httpReqErrText,
 			client: &Client{
@@ -361,7 +361,7 @@ func TestClient_Report(t *testing.T) {
 		{
 			name:         "Test expect failure simulated network error",
 			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			request:      []*Request{&Request{Params: Params{AppID: "any"}}},
+			transactions: []*Transaction{&Transaction{Params: Params{AppID: "any"}}},
 			expectErr:    true,
 			expectErrMsg: "Timeout exceeded",
 			client: &Client{
@@ -374,7 +374,7 @@ func TestClient_Report(t *testing.T) {
 		{
 			name: "Test expect failure simulated bad response from 3scale error",
 			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			request: []*Request{
+			transactions: []*Transaction{
 				{
 					Params: Params{
 						AppID: "any",
@@ -394,7 +394,7 @@ func TestClient_Report(t *testing.T) {
 		{
 			name: "Test expect failure 403",
 			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			request: []*Request{
+			transactions: []*Transaction{
 				{
 					Params: Params{
 						UserKey: "any",
@@ -420,7 +420,7 @@ func TestClient_Report(t *testing.T) {
 				Type:  ServiceToken,
 				Value: "st",
 			},
-			request: []*Request{
+			transactions: []*Transaction{
 				{
 					Params: Params{
 						UserKey: "test",
@@ -454,8 +454,8 @@ func TestClient_Report(t *testing.T) {
 		{
 			name: "Test context is respected",
 			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			request: []*Request{
-				NewRequest(Params{AppID: "any"},
+			transactions: []*Transaction{
+				NewTransaction(Params{AppID: "any"},
 					WithContext(ctx)),
 			},
 			expectErr:    true,
@@ -485,7 +485,7 @@ func TestClient_Report(t *testing.T) {
 				c = threeScaleTestClient(t, input.injectClient)
 			}
 
-			resp, err := c.Report(svcID, input.auth, input.request...)
+			resp, err := c.Report(svcID, input.auth, input.transactions...)
 			if err != nil {
 				if !input.expectErr {
 					t.Error("unexpected error")

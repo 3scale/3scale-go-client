@@ -41,9 +41,9 @@ const (
 
 // Backend is the interface for the 3scale backend Service Management API
 type Backend interface {
-	Authorize(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error)
-	AuthRep(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error)
-	Report(serviceID string, auth ClientAuth, requests ...*Request) (*ReportResponse, error)
+	Authorize(serviceID string, auth ClientAuth, transaction *Transaction) (*AuthorizeResponse, error)
+	AuthRep(serviceID string, auth ClientAuth, transaction *Transaction) (*AuthorizeResponse, error)
+	Report(serviceID string, auth ClientAuth, transactions ...*Transaction) (*ReportResponse, error)
 }
 
 // AuthorizeResponse from 3scale backend when calling the Authorize and AuthRep endpoints
@@ -89,11 +89,11 @@ type LimitPeriod string
 // Metrics let you track the usage of your API in 3scale
 type Metrics map[string]int
 
-// Option defines a callback function which is used to provide functional options to the construction of a Request object
-type Option func(*Request)
+// Option defines a callback function which is used to provide functional options to the construction of a Transaction object
+type Option func(*Transaction)
 
-// Params that are embedded in each Request to 3scale API
-// This structure simplifies the formatting of the request from the callers perspective
+// Params that are embedded in each Transaction to 3scale API
+// This structure simplifies the formatting of the transaction from the callers perspective
 // It is used to authenticate the application
 type Params struct {
 
@@ -124,16 +124,6 @@ type RateLimits struct {
 	limitReset     int
 }
 
-// Request holds the params and optional additions that will be sent
-// to 3scale as query parameters or headers.
-type Request struct {
-	Metrics    Metrics
-	Params     Params
-	Timestamp  string
-	context    context.Context
-	extensions Extensions
-}
-
 // ReportResponse is the object returned when a successful call to the Report API is made
 type ReportResponse struct {
 	Accepted bool
@@ -153,6 +143,16 @@ type UsageReport struct {
 
 // UsageReports defines a map of metric names to 'UsageReport'
 type UsageReports map[string]UsageReport
+
+// Transaction holds the params and optional additions that will be sent
+// to 3scale as query parameters or headers.
+type Transaction struct {
+	Metrics    Metrics
+	Params     Params
+	Timestamp  string
+	context    context.Context
+	extensions Extensions
+}
 
 // ***** XML return types from 3scale API
 

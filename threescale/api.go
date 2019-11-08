@@ -20,21 +20,21 @@ var (
 	httpReqError = errors.New(httpReqErrText)
 )
 
-// Authorize is a read-only operation to authorize an application with the authentication provided in the requests params
-func (c *Client) Authorize(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
-	return c.authOrAuthRep(authzEndpoint, serviceID, auth, request)
+// Authorize is a read-only operation to authorize an application with the authentication provided in the transaction params
+func (c *Client) Authorize(serviceID string, auth ClientAuth, transaction *Transaction) (*AuthorizeResponse, error) {
+	return c.authOrAuthRep(authzEndpoint, serviceID, auth, transaction)
 }
 
-// AuthRep should be used to authorize and report, in a single request
-// for an application with the authentication provided in the requests params
-func (c *Client) AuthRep(serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
-	return c.authOrAuthRep(authRepEndpoint, serviceID, auth, request)
+// AuthRep should be used to authorize and report, in a single transaction
+// for an application with the authentication provided in the transaction params
+func (c *Client) AuthRep(serviceID string, auth ClientAuth, transaction *Transaction) (*AuthorizeResponse, error) {
+	return c.authOrAuthRep(authRepEndpoint, serviceID, auth, transaction)
 }
 
-// Report the transactions to 3scale backend with the authentication provided in the requests params
-func (c *Client) Report(serviceID string, auth ClientAuth, reqs ...*Request) (*ReportResponse, error) {
+// Report the transactions to 3scale backend with the authentication provided in the transactions params
+func (c *Client) Report(serviceID string, auth ClientAuth, transactions ...*Transaction) (*ReportResponse, error) {
 	values := auth.joinToValues(url.Values{serviceIDKey: []string{serviceID}})
-	for index, req := range reqs {
+	for index, req := range transactions {
 		req.convertAndAddToTransactionValues(values, index, req)
 	}
 
@@ -43,21 +43,21 @@ func (c *Client) Report(serviceID string, auth ClientAuth, reqs ...*Request) (*R
 		return nil, fmt.Errorf("%s - %s ", httpReqError.Error(), err.Error())
 	}
 
-	if len(reqs) == 1 {
-		req = c.annotateRequest(reqs[0], req)
+	if len(transactions) == 1 {
+		req = c.annotateRequest(transactions[0], req)
 	}
 	return c.doReportReq(req, values)
 }
 
-func (c *Client) authOrAuthRep(endpoint, serviceID string, auth ClientAuth, request *Request) (*AuthorizeResponse, error) {
-	// build out http request for the provided Request object
-	req, err := c.buildGetReq(c.baseURL+endpoint, request)
+func (c *Client) authOrAuthRep(endpoint, serviceID string, auth ClientAuth, transaction *Transaction) (*AuthorizeResponse, error) {
+	// build out http transaction for the provided Transaction object
+	req, err := c.buildGetReq(c.baseURL+endpoint, transaction)
 	if err != nil {
 		return nil, fmt.Errorf("%s - %s ", httpReqError.Error(), err.Error())
 	}
 	// take the user input and encode to query string formatted to the expectations of 3scale backend
-	req.URL.RawQuery = c.inputToValues(serviceID, request, auth).Encode()
-	return c.doAuthorizeReq(req, request.extensions)
+	req.URL.RawQuery = c.inputToValues(serviceID, transaction, auth).Encode()
+	return c.doAuthorizeReq(req, transaction.extensions)
 }
 
 // GetPeer is a utility method that returns the remote hostname of the client
@@ -65,7 +65,7 @@ func (c *Client) GetPeer() string {
 	return c.backendHost
 }
 
-// Call 3scale backend with the provided HTTP request
+// Call 3scale backend with the provided HTTP transaction
 func (c *Client) doAuthorizeReq(req *http.Request, extensions Extensions) (*AuthorizeResponse, error) {
 	var xmlResponse ApiAuthResponseXML
 
@@ -163,34 +163,34 @@ func (c *Client) handleAuthorizeExtensions(resp *http.Response, response *Author
 	return response
 }
 
-func (c *Client) inputToValues(svcID string, req *Request, clientAuth ClientAuth) url.Values {
+func (c *Client) inputToValues(svcID string, transaction *Transaction, clientAuth ClientAuth) url.Values {
 	values := make(url.Values)
 	values.Add(serviceIDKey, svcID)
-	values = req.Params.joinToValues(values)
-	values = req.Metrics.joinToValues(values)
+	values = transaction.Params.joinToValues(values)
+	values = transaction.Metrics.joinToValues(values)
 	values = clientAuth.joinToValues(values)
 	return values
 }
 
-func (c *Client) buildGetReq(url string, request *Request) (*http.Request, error) {
+func (c *Client) buildGetReq(url string, transaction *Transaction) (*http.Request, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return req, err
 
 	}
-	return c.annotateRequest(request, req), nil
+	return c.annotateRequest(transaction, req), nil
 }
 
-// annotateRequest modifies the *http.Request with required metadata and formatting for 3scale
-func (c *Client) annotateRequest(request *Request, httpReq *http.Request) *http.Request {
+// annotateRequest modifies the *http.Transaction with required metadata and formatting for 3scale
+func (c *Client) annotateRequest(transaction *Transaction, httpReq *http.Request) *http.Request {
 	httpReq.Header.Set("Accept", "application/xml")
 
-	if request.extensions != nil {
-		httpReq.Header.Set(enableExtensions, encodeExtensions(request.extensions))
+	if transaction.extensions != nil {
+		httpReq.Header.Set(enableExtensions, encodeExtensions(transaction.extensions))
 	}
 
-	if request.context != nil {
-		httpReq = httpReq.WithContext(request.context)
+	if transaction.context != nil {
+		httpReq = httpReq.WithContext(transaction.context)
 	}
 
 	return httpReq

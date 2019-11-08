@@ -34,8 +34,8 @@ func TestNewDefaultClient(t *testing.T) {
 	}
 }
 
-func TestNewRequest(t *testing.T) {
-	r := NewRequest(
+func TestNewTransaction(t *testing.T) {
+	r := NewTransaction(
 		Params{AppID: "any"},
 		WithExtensions(Extensions{HierarchyExtension: "1", LimitExtension: "1"}),
 		WithContext(context.TODO()))

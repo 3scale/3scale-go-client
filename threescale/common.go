@@ -21,7 +21,7 @@ const (
 	// limitResetHeaderKey has a value set to an integer stating the amount of seconds left for the current limiting period to elapse
 	limitResetHeaderKey = "3scale-limit-reset"
 
-	httpReqErrText = "error building http request"
+	httpReqErrText = "error building http transaction"
 
 	// a parsable time format used to convert Ruby time to time type
 	timeLayout = "2006-01-02 15:04:05 -0700"
@@ -49,15 +49,15 @@ func NewDefaultClient() (*Client, error) {
 	return NewClient(defaultBackendUrl, defaultHttpClient())
 }
 
-// NewRequest for 3scale backend with optional Option(s)
-func NewRequest(params Params, opts ...Option) *Request {
-	req := &Request{Params: params}
+// NewTransaction for 3scale backend with optional Option(s)
+func NewTransaction(params Params, opts ...Option) *Transaction {
+	transaction := &Transaction{Params: params}
 
 	for _, opt := range opts {
-		opt(req)
+		opt(transaction)
 	}
 
-	return req
+	return transaction
 }
 
 // GetHierarchy returns a list of children (methods) associated with a parent(metric)
@@ -155,13 +155,13 @@ func (r *RateLimits) GetLimitReset() int {
 
 // because the report endpoint takes batches, we must alter the typical formatting here and customise it slightly to
 // support reporting batches of transactions
-func (r *Request) convertAndAddToTransactionValues(reportValues url.Values, index int, req *Request) url.Values {
-	paramValues := req.Params.joinToValues(make(url.Values))
+func (r *Transaction) convertAndAddToTransactionValues(reportValues url.Values, index int, transaction Transaction) url.Values {
+	paramValues := transaction.Params.joinToValues(make(url.Values))
 	for k, v := range paramValues {
 		reportValues.Add(fmt.Sprintf("transactions[%d][%s]", index, k), v[0])
 	}
 
-	for k, v := range req.Metrics {
+	for k, v := range transaction.Metrics {
 		reportValues.Add(fmt.Sprintf("transactions[%d][usage][%s]", index, k), strconv.Itoa(v))
 	}
 
