@@ -330,6 +330,177 @@ func TestClient_AuthRep(t *testing.T) {
 
 }
 
+func TestClient_Report(t *testing.T) {
+	const svcID = "test-id"
+
+	ctx := context.Background()
+	ctx, _ = context.WithDeadline(ctx, time.Now())
+
+	inputs := []struct {
+		name           string
+		auth           ClientAuth
+		request        []*Request
+		expectErr      bool
+		expectErrMsg   string
+		expectResponse *ReportResponse
+		client         *Client
+		injectClient   *http.Client
+	}{
+		{
+			name:         "Test expect failure bad url passed",
+			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
+			request:      []*Request{&Request{Params: Params{AppID: "any"}}},
+			expectErr:    true,
+			expectErrMsg: httpReqErrText,
+			client: &Client{
+				backendHost: "/some/invalid/value%_",
+				baseURL:     "/some/invalid/value%_",
+				httpClient:  http.DefaultClient,
+			},
+		},
+		{
+			name:         "Test expect failure simulated network error",
+			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
+			request:      []*Request{&Request{Params: Params{AppID: "any"}}},
+			expectErr:    true,
+			expectErrMsg: "Timeout exceeded",
+			client: &Client{
+				baseURL: defaultBackendUrl,
+				httpClient: &http.Client{
+					Timeout: time.Nanosecond,
+				},
+			},
+		},
+		{
+			name: "Test expect failure simulated bad response from 3scale error",
+			auth: ClientAuth{Type: ProviderKey, Value: "any"},
+			request: []*Request{
+				{
+					Params: Params{
+						AppID: "any",
+					},
+				},
+			},
+			expectErr:    true,
+			expectErrMsg: "EOF",
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: http.StatusForbidden,
+					Body:       ioutil.NopCloser(bytes.NewBufferString("EOF")),
+					Header:     make(http.Header),
+				}
+			}),
+		},
+		{
+			name: "Test expect failure 403",
+			auth: ClientAuth{Type: ProviderKey, Value: "any"},
+			request: []*Request{
+				{
+					Params: Params{
+						UserKey: "any",
+					},
+				},
+			},
+			expectResponse: &ReportResponse{
+				Accepted:   false,
+				Reason:     "user_key_invalid",
+				StatusCode: http.StatusForbidden,
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: http.StatusForbidden,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GenInvalidUserKey("any"))),
+					Header:     make(http.Header),
+				}
+			}),
+		},
+		{
+			name: "Test params formatting",
+			auth: ClientAuth{
+				Type:  ServiceToken,
+				Value: "st",
+			},
+			request: []*Request{
+				{
+					Params: Params{
+						UserKey: "test",
+					},
+					Metrics: Metrics{"hits": 1},
+				},
+				{
+					Params: Params{
+						UserKey: "test-2",
+					},
+					Metrics: Metrics{"hits": 1, "other": 2},
+				},
+			},
+			expectResponse: &ReportResponse{
+				Accepted:   true,
+				StatusCode: http.StatusAccepted,
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				// we know that Encode will sort by keys so we can predict this output
+				// decoded to service_id=test-id&service_token=st&transactions[0][usage][hits]=1&transactions[0][user_key]=test&transactions[1][usage][hits]=1&transactions[1][usage][other]=2&transactions[1][user_key]=test-2
+				expect := `service_id=test-id&service_token=st&transactions%5B0%5D%5Busage%5D%5Bhits%5D=1&transactions%5B0%5D%5Buser_key%5D=test&transactions%5B1%5D%5Busage%5D%5Bhits%5D=1&transactions%5B1%5D%5Busage%5D%5Bother%5D=2&transactions%5B1%5D%5Buser_key%5D=test-2`
+				equals(t, expect, req.URL.RawQuery)
+
+				return &http.Response{
+					StatusCode: 202,
+					Body:       ioutil.NopCloser(bytes.NewBufferString("")),
+					Header:     make(http.Header),
+				}
+			}),
+		},
+		{
+			name: "Test context is respected",
+			auth: ClientAuth{Type: ProviderKey, Value: "any"},
+			request: []*Request{
+				NewRequest(Params{AppID: "any"},
+					WithContext(ctx)),
+			},
+			expectErr:    true,
+			expectErrMsg: "context deadline exceeded",
+			client: &Client{
+				baseURL: defaultBackendUrl,
+				httpClient: &http.Client{
+					Timeout: time.Nanosecond,
+				},
+			},
+		},
+	}
+
+	for _, input := range inputs {
+		t.Run(input.name, func(t *testing.T) {
+			if input.injectClient == nil {
+				// fallback client
+				input.injectClient = NewTestClient(func(req *http.Request) *http.Response {
+					equals(t, req.Method, http.MethodPost)
+					equals(t, req.URL.Path, reportEndpoint)
+					return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess()))}
+				})
+			}
+
+			c := input.client
+			if c == nil {
+				c = threeScaleTestClient(t, input.injectClient)
+			}
+
+			resp, err := c.Report(svcID, input.auth, input.request...)
+			if err != nil {
+				if !input.expectErr {
+					t.Error("unexpected error")
+				}
+				// we expected an error so ensure our err conditions are met
+				if !strings.Contains(err.Error(), input.expectErrMsg) {
+					t.Errorf("expected our error message to contain substring %s", input.expectErrMsg)
+				}
+				return
+			}
+			equals(t, input.expectResponse, resp)
+		})
+	}
+}
+
 // ******
 // Helpers
 
