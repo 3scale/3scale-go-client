@@ -76,6 +76,18 @@ func TestAuthorizeResponse_GetUsageReports(t *testing.T) {
 	equals(t, resp.GetUsageReports()["test"], report)
 }
 
+func TestHierarchy_DeepCopy(t *testing.T) {
+	h := make(Hierarchy)
+	h["hits"] = []string{"x", "y", "z"}
+
+	clone := h.DeepCopy()
+	clone["hits"] = []string{"x"}
+
+	if len(h["hits"]) != 3 {
+		t.Error("expected changes in cloned value to not modify original")
+	}
+}
+
 func TestMetrics_Add(t *testing.T) {
 	m := make(Metrics)
 	current, err := m.Add("test", 1)
@@ -146,6 +158,24 @@ func TestMetrics_Delete(t *testing.T) {
 	m.Delete("test")
 	if len(m) != 0 {
 		t.Error("item was not deleted")
+	}
+}
+
+func TestMetrics_DeepCopy(t *testing.T) {
+	original := Metrics{"hits": 1, "test": 2}
+	clone := original.DeepCopy()
+
+	v, ok := clone["test"]
+	if !ok {
+		t.Error("expected deep copy function to have copied 'test' key and value")
+	}
+	if v != 2 {
+		t.Error("unexpected value for 'test'")
+	}
+
+	clone["test"] = 3
+	if v, ok = original["test"]; v != 2 {
+		t.Error("unexpect value in original after modifying clone")
 	}
 }
 
