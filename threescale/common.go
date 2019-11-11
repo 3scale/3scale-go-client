@@ -75,6 +75,18 @@ func (ca ClientAuth) joinToValues(values url.Values) url.Values {
 	return values
 }
 
+// DeepCopy returns a clone of the original Metrics. It provides a deep copy
+// of both the key and the value of the original Hierarchy.
+func (h Hierarchy) DeepCopy() Hierarchy {
+	clone := make(Hierarchy, len(h))
+	for k, v := range h {
+		var clonedV []string
+		clonedV = append(clonedV, v...)
+		clone[k] = clonedV
+	}
+	return clone
+}
+
 // Add takes a provided key and value and adds them to the Metric 'm'
 // If the metric already existed in 'm', then the value will be added (if positive) or subtracted (if negative) from the existing value.
 // If a subtraction leads to a negative value Add returns an error  and the change will be discarded.
@@ -104,6 +116,15 @@ func (m Metrics) Set(name string, value int) error {
 // Delete a metric m['name'] if present
 func (m Metrics) Delete(name string) {
 	delete(m, name)
+}
+
+// DeepCopy returns a clone of the original Metrics
+func (m Metrics) DeepCopy() Metrics {
+	clone := make(Metrics, len(m))
+	for k, v := range m {
+		clone[k] = v
+	}
+	return clone
 }
 
 // adds the metrics and their associated values to the provided url.Values - converting them as required in the process
