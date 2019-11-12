@@ -41,9 +41,9 @@ const (
 
 // Backend is the interface for the 3scale backend Service Management API
 type Backend interface {
-	Authorize(serviceID string, auth ClientAuth, transaction *Transaction) (*AuthorizeResponse, error)
-	AuthRep(serviceID string, auth ClientAuth, transaction *Transaction) (*AuthorizeResponse, error)
-	Report(serviceID string, auth ClientAuth, transactions ...*Transaction) (*ReportResponse, error)
+	Authorize(serviceID string, auth ClientAuth, transaction Transaction, options ...Option) (*AuthorizeResponse, error)
+	AuthRep(serviceID string, auth ClientAuth, transaction Transaction, options ...Option) (*AuthorizeResponse, error)
+	Report(serviceID string, auth ClientAuth, transactions []Transaction, options ...Option) (*ReportResponse, error)
 }
 
 // AuthorizeResponse from 3scale backend when calling the Authorize and AuthRep endpoints
@@ -89,8 +89,14 @@ type LimitPeriod string
 // Metrics let you track the usage of your API in 3scale
 type Metrics map[string]int
 
-// Option defines a callback function which is used to provide functional options to the construction of a Transaction object
-type Option func(*Transaction)
+// Option defines a callback function which is used to provide functional options to a request
+type Option func(*Options)
+
+// Options to provide optional behaviour to the standard APIs for Authorize, AuthRep and Report
+type Options struct {
+	context    context.Context
+	extensions Extensions
+}
 
 // Params that are embedded in each Transaction to 3scale API
 // This structure simplifies the formatting of the transaction from the callers perspective
@@ -147,11 +153,9 @@ type UsageReports map[string]UsageReport
 // Transaction holds the params and optional additions that will be sent
 // to 3scale as query parameters or headers.
 type Transaction struct {
-	Metrics    Metrics
-	Params     Params
-	Timestamp  string
-	context    context.Context
-	extensions Extensions
+	Metrics   Metrics
+	Params    Params
+	Timestamp string
 }
 
 // ***** XML return types from 3scale API

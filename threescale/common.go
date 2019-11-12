@@ -49,17 +49,6 @@ func NewDefaultClient() (*Client, error) {
 	return NewClient(defaultBackendUrl, defaultHttpClient())
 }
 
-// NewTransaction for 3scale backend with optional Option(s)
-func NewTransaction(params Params, opts ...Option) *Transaction {
-	transaction := &Transaction{Params: params}
-
-	for _, opt := range opts {
-		opt(transaction)
-	}
-
-	return transaction
-}
-
 // GetHierarchy returns a list of children (methods) associated with a parent(metric)
 func (r *AuthorizeResponse) GetHierarchy() Hierarchy {
 	return r.hierarchy
