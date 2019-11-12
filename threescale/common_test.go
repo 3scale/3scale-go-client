@@ -1,7 +1,6 @@
 package threescale
 
 import (
-	"context"
 	"net/http"
 	"testing"
 )
@@ -32,21 +31,6 @@ func TestNewDefaultClient(t *testing.T) {
 	if c.httpClient.Timeout != defaultTimeout {
 		t.Error("unexpected setting in default client")
 	}
-}
-
-func TestNewTransaction(t *testing.T) {
-	r := NewTransaction(
-		Params{AppID: "any"},
-		WithExtensions(Extensions{HierarchyExtension: "1", LimitExtension: "1"}),
-		WithContext(context.TODO()))
-	if r.context != context.TODO() {
-		t.Error("expected context to be set")
-	}
-
-	if len(r.extensions) != 2 {
-		t.Error("expected extensions to be set")
-	}
-
 }
 
 func TestAuthorizeResponse_GetHierarchy(t *testing.T) {
