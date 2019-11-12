@@ -187,17 +187,18 @@ func (ur UsageReportXML) convert() (UsageReport, error) {
 		CurrentValue: ur.CurrentValue,
 	}
 
-	if t, err := time.Parse(timeLayout, ur.PeriodStart); err != nil {
+	t, err := time.Parse(timeLayout, ur.PeriodStart)
+	if err != nil {
 		return report, err
-	} else {
-		report.PeriodStart = t.Unix()
 	}
+	report.PeriodStart = t.Unix()
 
-	if t, err := time.Parse(timeLayout, ur.PeriodEnd); err != nil {
+	t, err = time.Parse(timeLayout, ur.PeriodEnd)
+	if err != nil {
 		return report, err
-	} else {
-		report.PeriodEnd = t.Unix()
 	}
+	report.PeriodEnd = t.Unix()
+
 	return report, err
 }
 

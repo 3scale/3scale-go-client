@@ -2,7 +2,7 @@ package fake
 
 import "fmt"
 
-// Get default success response for authorize endpoint
+// GetAuthSuccess gets default success response for authorize endpoint
 func GetAuthSuccess() string {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <status>
@@ -11,25 +11,25 @@ func GetAuthSuccess() string {
 </status>`
 }
 
-// Get mock response for invalid service token or id
+// GenInvalidIdOrTokenResp gets mock response for invalid service token or id
 func GenInvalidIdOrTokenResp(token string, id string) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <error code="service_token_invalid">service token "%s" or service id "%s" is invalid</error>`, token, id)
 }
 
-// Get mock response for invalid metric
+// GetInvalidMetricResp gets mock response for invalid metric
 func GetInvalidMetricResp() string {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <error code="metric_invalid">metric "anyButHits" is invalid</error>`
 }
 
-// Get mock response for invalid user key
+// GenInvalidUserKey gets mock response for invalid user key
 func GenInvalidUserKey(key string) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <error code="user_key_invalid">user key "%s" is invalid</error>`, key)
 }
 
-// Get mock response for limit exceeded
+// GetLimitExceededResp gets mock response for limit exceeded
 func GetLimitExceededResp() string {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <status>
@@ -47,7 +47,7 @@ func GetLimitExceededResp() string {
 </status>`
 }
 
-// Get mock response with hierarchy extension enabled
+// GetHierarchyEnabledResponse gets mock response with hierarchy extension enabled
 func GetHierarchyEnabledResponse() string {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <status>

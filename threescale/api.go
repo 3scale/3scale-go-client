@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	httpReqError = errors.New(httpReqErrText)
+	errHttpReq = errors.New(httpReqErrText)
 )
 
 // Authorize is a read-only operation to authorize an application with the authentication provided in the transaction params
@@ -46,7 +46,7 @@ func (c *Client) authOrAuthRep(endpoint, serviceID string, auth ClientAuth, tran
 	// build out http transaction for the provided Transaction object
 	req, err := c.buildGetReq(c.baseURL+endpoint, options)
 	if err != nil {
-		return nil, fmt.Errorf("%s - %s ", httpReqError.Error(), err.Error())
+		return nil, fmt.Errorf("%s - %s ", errHttpReq.Error(), err.Error())
 	}
 	// take the user input and encode to query string formatted to the expectations of 3scale backend
 	req.URL.RawQuery = c.inputToValues(serviceID, transaction, auth).Encode()
@@ -113,7 +113,7 @@ func (c *Client) doAuthorizeReq(req *http.Request, extensions Extensions) (*Auth
 func (c *Client) doReportReq(values url.Values, options *Options) (*ReportResponse, error) {
 	req, err := http.NewRequest(http.MethodPost, c.baseURL+reportEndpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("%s - %s ", httpReqError.Error(), err.Error())
+		return nil, fmt.Errorf("%s - %s ", errHttpReq.Error(), err.Error())
 	}
 
 	req = c.annotateRequest(req, options)

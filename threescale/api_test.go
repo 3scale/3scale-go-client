@@ -211,7 +211,7 @@ func TestClient_Authorize(t *testing.T) {
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				if strings.Contains(req.URL.RawQuery, "usage") {
-					t.Error("unexpected usage has been generated for emtpy transaction")
+					t.Error("unexpected usage has been generated for empty transaction")
 				}
 				expectValSet := req.Header.Get("3scale-Options")
 				if expectValSet != "limit_headers=1" {
@@ -581,9 +581,8 @@ func getExtensions(t *testing.T) map[string]string {
 			"many@@and==":   "should@@befine==",
 			"a test&":       "&ok",
 		}
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // returns a randomly-ordered list of strings for extensions with format "key=value"
@@ -615,15 +614,14 @@ func checkExtensions(t *testing.T, req *http.Request) (bool, string) {
 
 	if compareUnorderedStringLists(found, expected) {
 		return true, ""
-	} else {
-		sort.Strings(expected)
-		sort.Strings(found)
-
-		return false, fmt.Sprintf("\nexpected extension header value %s\n"+
-			"                      but found %s",
-			strings.Join(expected, ", "), strings.Join(found, ", "))
-
 	}
+	sort.Strings(expected)
+	sort.Strings(found)
+
+	return false, fmt.Sprintf("\nexpected extension header value %s\n"+
+		"                      but found %s",
+		strings.Join(expected, ", "), strings.Join(found, ", "))
+
 }
 
 func compareUnorderedStringLists(one []string, other []string) bool {
