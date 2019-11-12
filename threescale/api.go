@@ -72,7 +72,7 @@ func (c *Client) doAuthorizeReq(req *http.Request, extensions Extensions) (*Auth
 		return nil, err
 	}
 	response := &AuthorizeResponse{
-		Reason:     xmlResponse.Reason,
+		Reason:     xmlResponse.Code,
 		Success:    xmlResponse.Authorized,
 		StatusCode: resp.StatusCode,
 	}
