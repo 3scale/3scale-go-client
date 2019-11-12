@@ -210,6 +210,9 @@ func TestClient_Authorize(t *testing.T) {
 				},
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				if strings.Contains(req.URL.RawQuery, "usage") {
+					t.Error("unexpected usage has been generated for emtpy transaction")
+				}
 				expectValSet := req.Header.Get("3scale-Options")
 				if expectValSet != "limit_headers=1" {
 					t.Error("expected rate limiting feature to have been enabled via header")
