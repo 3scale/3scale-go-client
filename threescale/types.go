@@ -22,15 +22,14 @@ const (
 	// LimitExtension is the key to enable this extension when calling 3scale backend - set to 1 to enable
 	LimitExtension = "limit_headers"
 
-	// https://github.com/3scale/apisonator/issues/75
 	// HierarchyExtension is the key to enabling hierarchy feature. Set its bool value to 1 to enable.
+	// https://github.com/3scale/apisonator/issues/75
 	HierarchyExtension = "hierarchy"
 )
 
+// Predefined, known LimitPeriods which can be used in 3scale rate limiting functionality
+// These values represent time durations.
 const (
-
-	// Predefined, known LimitPeriods
-
 	Minute   LimitPeriod = "minute"
 	Hour     LimitPeriod = "hour"
 	Day      LimitPeriod = "day"
@@ -172,7 +171,7 @@ type ApiAuthResponseXML struct {
 	} `xml:"usage_reports"`
 }
 
-// Hierarchy encapsulates the return value when using "hierarchy" extension
+// HierarchyXML encapsulates the return value when using "hierarchy" extension
 type HierarchyXML struct {
 	Metric []struct {
 		Name     string `xml:"name,attr"`

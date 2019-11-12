@@ -158,7 +158,7 @@ func TestMetrics_DeepCopy(t *testing.T) {
 	}
 
 	clone["test"] = 3
-	if v, ok = original["test"]; v != 2 {
+	if v, _ = original["test"]; v != 2 {
 		t.Error("unexpect value in original after modifying clone")
 	}
 }
