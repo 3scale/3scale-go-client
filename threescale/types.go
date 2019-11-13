@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/xml"
 	"net/http"
+	"time"
 )
 
 const (
@@ -82,6 +83,10 @@ type Extensions map[string]string
 // Hierarchy maps a parent metric to its child metrics
 type Hierarchy map[string][]string
 
+// InstrumentationCB provides a callback hook into the client at response time to provide information
+// about the underlying request to the remote host
+type InstrumentationCB func(ctx context.Context, hostName, endpoint string, statusCode int, requestDuration time.Duration)
+
 // LimitPeriod wraps the known rate limiting periods as defined in 3scale
 type LimitPeriod string
 
@@ -93,8 +98,9 @@ type Option func(*Options)
 
 // Options to provide optional behaviour to the standard APIs for Authorize, AuthRep and Report
 type Options struct {
-	context    context.Context
-	extensions Extensions
+	context           context.Context
+	extensions        Extensions
+	instrumentationCB InstrumentationCB
 }
 
 // Params that are embedded in each Transaction to 3scale API

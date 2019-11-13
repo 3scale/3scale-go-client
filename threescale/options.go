@@ -19,9 +19,17 @@ func WithExtensions(extensions Extensions) Option {
 	}
 }
 
+// WithInstrumentationCallback allows the caller to provide an optional callback function that will
+// be called with the details of the underlying request to 3scale if present as an option
+func WithInstrumentationCallback(callback InstrumentationCB) Option {
+	return func(options *Options) {
+		options.instrumentationCB = callback
+	}
+}
+
 // newOptions for 3scale backend
 func newOptions(opts ...Option) *Options {
-	options := &Options{}
+	options := &Options{context: context.TODO()}
 
 	for _, opt := range opts {
 		opt(options)

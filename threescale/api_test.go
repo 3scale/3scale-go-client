@@ -22,8 +22,12 @@ import (
 func TestClient_Authorize(t *testing.T) {
 	const svcID = "test"
 
+	// used for testing context option
 	ctx := context.Background()
 	ctx, _ = context.WithDeadline(ctx, time.Now())
+
+	// used for testing instrumentation hook
+	done := make(chan bool)
 
 	inputs := []struct {
 		name           string
@@ -35,6 +39,7 @@ func TestClient_Authorize(t *testing.T) {
 		expectResponse *AuthorizeResponse
 		client         *Client
 		injectClient   *http.Client
+		waitForCB      bool
 	}{
 		{
 			name:         "Test expect failure bad url passed",
@@ -244,6 +249,24 @@ func TestClient_Authorize(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "Test instrumentation callback hook",
+			auth:        ClientAuth{Type: ProviderKey, Value: "any"},
+			transaction: Transaction{Params: Params{AppID: "any"}},
+			options:     []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusOK, authzEndpoint, "su1.3scale.net"))},
+			expectResponse: &AuthorizeResponse{
+				Success:    true,
+				StatusCode: 200,
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
+					Header:     make(http.Header),
+				}
+			}),
+			waitForCB: true,
+		},
 	}
 
 	for _, input := range inputs {
@@ -272,6 +295,11 @@ func TestClient_Authorize(t *testing.T) {
 				}
 				return
 			}
+
+			if input.waitForCB {
+				<-done
+			}
+
 			equals(t, input.expectResponse, resp)
 		})
 	}
@@ -338,8 +366,12 @@ func TestClient_AuthRep(t *testing.T) {
 func TestClient_Report(t *testing.T) {
 	const svcID = "test-id"
 
+	// used for testing context option
 	ctx := context.Background()
 	ctx, _ = context.WithDeadline(ctx, time.Now())
+
+	// used for testing instrumentation hook
+	done := make(chan bool)
 
 	inputs := []struct {
 		name           string
@@ -351,6 +383,7 @@ func TestClient_Report(t *testing.T) {
 		expectResponse *ReportResponse
 		client         *Client
 		injectClient   *http.Client
+		waitForCB      bool
 	}{
 		{
 			name:         "Test expect failure bad url passed",
@@ -474,6 +507,28 @@ func TestClient_Report(t *testing.T) {
 					Timeout: time.Nanosecond,
 				},
 			},
+		},
+		{
+			name: "Test instrumentation callback hook",
+			auth: ClientAuth{Type: ProviderKey, Value: "any"},
+			transactions: []Transaction{
+				{
+					Params: Params{AppID: "any"},
+				},
+			},
+			options: []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusAccepted, reportEndpoint, "su1.3scale.net"))},
+			expectResponse: &ReportResponse{
+				Accepted:   true,
+				StatusCode: http.StatusAccepted,
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: http.StatusAccepted,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
+					Header:     make(http.Header),
+				}
+			}),
+			waitForCB: true,
 		},
 	}
 
@@ -645,6 +700,24 @@ func compareUnorderedStringLists(one []string, other []string) bool {
 	}
 
 	return true
+}
+
+func getInstrumentationCallback(t *testing.T, done chan bool, expectStatus int, expectEndpoint, expectHostname string) InstrumentationCB {
+	return func(ctx context.Context, hostName, endpoint string, statusCode int, requestDuration time.Duration) {
+		if hostName != expectHostname {
+			t.Errorf("unexpected hostname in callback")
+		}
+
+		if endpoint != expectEndpoint {
+			t.Errorf("unexpected endpoint in callback")
+		}
+
+		if statusCode != expectStatus {
+			t.Errorf("unexpected statusCode in callback")
+		}
+
+		done <- true
+	}
 }
 
 // ******
