@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -50,7 +51,7 @@ func (c *Client) authOrAuthRep(endpoint, serviceID string, auth ClientAuth, tran
 	}
 	// take the user input and encode to query string formatted to the expectations of 3scale backend
 	req.URL.RawQuery = c.inputToValues(serviceID, transaction, auth).Encode()
-	return c.doAuthorizeReq(req, options.extensions)
+	return c.doAuthorizeReq(req, options, endpoint)
 }
 
 // GetPeer is a utility method that returns the remote hostname of the client
@@ -59,15 +60,21 @@ func (c *Client) GetPeer() string {
 }
 
 // Call 3scale backend with the provided HTTP transaction
-func (c *Client) doAuthorizeReq(req *http.Request, extensions Extensions) (*AuthorizeResponse, error) {
+func (c *Client) doAuthorizeReq(req *http.Request, options *Options, endpoint string) (*AuthorizeResponse, error) {
 	var xmlResponse ApiAuthResponseXML
 
+	start := time.Now()
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
+	elapsed := time.Since(start)
+
+	if options.instrumentationCB != nil {
+		go options.instrumentationCB(options.context, c.GetPeer(), endpoint, resp.StatusCode, elapsed)
+	}
+
 	if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
 		return nil, err
 	}
@@ -103,8 +110,8 @@ func (c *Client) doAuthorizeReq(req *http.Request, extensions Extensions) (*Auth
 			}
 		}
 	}
-	if extensions != nil {
-		return c.handleAuthorizeExtensions(resp, response, extensions), nil
+	if options.extensions != nil {
+		return c.handleAuthorizeExtensions(resp, response, options.extensions), nil
 	}
 
 	return response, err
@@ -120,11 +127,17 @@ func (c *Client) doReportReq(values url.Values, options *Options) (*ReportRespon
 	req.URL.RawQuery = values.Encode()
 	req.Header.Set("Accept", "application/xml")
 
+	start := time.Now()
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	elapsed := time.Since(start)
+
+	if options.instrumentationCB != nil {
+		go options.instrumentationCB(options.context, c.GetPeer(), reportEndpoint, resp.StatusCode, elapsed)
+	}
 
 	// ensure response is in 2xx range
 	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
@@ -191,9 +204,7 @@ func (c *Client) annotateRequest(req *http.Request, options *Options) *http.Requ
 		req.Header.Set(enableExtensions, encodeExtensions(options.extensions))
 	}
 
-	if options.context != nil {
-		req = req.WithContext(options.context)
-	}
+	req = req.WithContext(options.context)
 
 	return req
 }
