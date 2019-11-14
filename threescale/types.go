@@ -135,6 +135,17 @@ type RateLimits struct {
 	limitReset     int
 }
 
+// Request is a top-level interface which permits the creation of a custom request to 3scale
+// agnostic of the underlying transport/protocol and supporting custom implementations.
+type Request interface {
+	ExecuteAuth() (*AuthorizeResponse, error)
+	ExecuteAuthRep() (*AuthorizeResponse, error)
+	ExecuteReport() (*ReportResponse, error)
+}
+
+type ThreescaleRequest interface {
+}
+
 // ReportResponse is the object returned when a successful call to the Report API is made
 type ReportResponse struct {
 	Accepted bool

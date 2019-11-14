@@ -42,6 +42,18 @@ func (c *Client) Report(serviceID string, auth ClientAuth, transactions []Transa
 	return c.doReportReq(values, newOptions(options...))
 }
 
+func (c *Client) DoAuthorize(request Request) (*AuthorizeResponse, error) {
+	return request.ExecuteAuth()
+}
+
+func (c *Client) DoAuthRep(request Request) (*AuthorizeResponse, error) {
+	return request.ExecuteAuthRep()
+}
+
+func (c *Client) DoReport(request Request) (*ReportResponse, error) {
+	return request.ExecuteReport()
+}
+
 func (c *Client) authOrAuthRep(endpoint, serviceID string, auth ClientAuth, transaction Transaction, opts ...Option) (*AuthorizeResponse, error) {
 	options := newOptions(opts...)
 	// build out http transaction for the provided Transaction object
