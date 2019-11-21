@@ -44,6 +44,10 @@ var (
 	errHttpReq = errors.New(httpReqErrText)
 )
 
+type WrappedRequest struct {
+	threescale.Request
+}
+
 // Client interacts with 3scale Service Management API and implements a threescale client
 type Client struct {
 	backendHost string
@@ -95,46 +99,76 @@ func NewDefaultClient() (*Client, error) {
 
 // Authorize is a read-only operation to authorize an application with the authentication provided in the transaction params
 func (c *Client) Authorize(apiCall threescale.Request) (threescale.AuthorizeResult, error) {
-	req, err := requestBuilder{}.build(apiCall, c.baseURL, auth)
-	if err != nil {
-		return nil, c.wrapError(err)
-	}
+	return c.AuthorizeWithOptions(apiCall)
+}
 
-	return c.executeAuthCall(req, apiCall.Extensions)
+// AuthorizeWithOptions provides the same behaviour as Authorize with additional functionality provided by Option(s)
+func (c *Client) AuthorizeWithOptions(apiCall threescale.Request, options ...Option) (threescale.AuthorizeResult, error) {
+	return c.doAuthOrAuthRep(apiCall, auth, newOptions(options...))
 }
 
 // AuthRep should be used to authorize and report, in a single transaction
 // for an application with the authentication provided in the transaction params
 func (c *Client) AuthRep(apiCall threescale.Request) (threescale.AuthorizeResult, error) {
-	req, err := requestBuilder{}.build(apiCall, c.baseURL, authRep)
-	if err != nil {
-		return nil, c.wrapError(err)
-	}
+	return c.AuthRepWithOptions(apiCall)
+}
 
-	return c.executeAuthCall(req, apiCall.Extensions)
+// AuthRepWithOptions provides the same behaviour as AuthRep with additional functionality provided by Option(s)
+func (c *Client) AuthRepWithOptions(apiCall threescale.Request, options ...Option) (threescale.AuthorizeResult, error) {
+	return c.doAuthOrAuthRep(apiCall, authRep, newOptions(options...))
 }
 
 func (c *Client) Report(apiCall threescale.Request) (threescale.ReportResult, error) {
-	req, err := requestBuilder{}.build(apiCall, c.baseURL, report)
-	if err != nil {
-		return nil, c.wrapError(err)
-	}
+	return c.ReportWithOptions(apiCall)
+}
 
-	return c.executeReportCall(req, apiCall.Extensions)
+// ReportWithOptions provides the same behaviour as Report with additional functionality provided by Option(s)
+func (c *Client) ReportWithOptions(apiCall threescale.Request, options ...Option) (threescale.ReportResult, error) {
+	return c.doReport(apiCall, newOptions(options...))
 }
 
 func (c *Client) GetPeer() string {
 	return c.backendHost
 }
 
-func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions) (*AuthorizeResponse, error) {
+func (c *Client) doAuthOrAuthRep(apiCall threescale.Request, kind kind, options *Options) (*AuthorizeResponse, error) {
+	req, err := requestBuilder{}.build(apiCall, c.baseURL, kind)
+	if err != nil {
+		return nil, c.wrapError(err)
+	}
+
+	return c.executeAuthCall(req, apiCall.Extensions, options)
+}
+
+func (c *Client) doReport(apiCall threescale.Request, options *Options) (*ReportResponse, error) {
+	req, err := requestBuilder{}.build(apiCall, c.baseURL, report)
+	if err != nil {
+		return nil, c.wrapError(err)
+	}
+
+	return c.executeReportCall(req, apiCall.Extensions, options)
+}
+
+func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, options *Options) (*AuthorizeResponse, error) {
 	var xmlResponse internal.AuthResponseXML
 
+	if options != nil && options.context != nil {
+		req = req.WithContext(options.context)
+	}
+
+	start := time.Now()
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	requestDuration := time.Since(start)
 	defer resp.Body.Close()
+
+	go func() {
+		if options != nil && options.instrumentationCB != nil {
+			options.instrumentationCB(options.context, c.GetPeer(), resp.StatusCode, requestDuration)
+		}
+	}()
 
 	if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
 		return nil, err
@@ -156,14 +190,26 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions) (
 	return response, err
 }
 
-func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions) (*ReportResponse, error) {
+func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions, options *Options) (*ReportResponse, error) {
 	var xmlResponse internal.ReportErrorXML
 
+	if options != nil && options.context != nil {
+		req = req.WithContext(options.context)
+	}
+
+	start := time.Now()
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	requestDuration := time.Since(start)
 	defer resp.Body.Close()
+
+	go func() {
+		if options != nil && options.instrumentationCB != nil {
+			options.instrumentationCB(options.context, c.GetPeer(), resp.StatusCode, requestDuration)
+		}
+	}()
 
 	// ensure response is in 2xx range
 	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
