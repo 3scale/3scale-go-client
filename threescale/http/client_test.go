@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -15,9 +16,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/3scale/3scale-go-client/threescale"
-
 	"github.com/3scale/3scale-go-client/fake"
+	"github.com/3scale/3scale-go-client/threescale"
 	"github.com/3scale/3scale-go-client/threescale/api"
 )
 
@@ -278,6 +278,98 @@ func TestClient_Authorize(t *testing.T) {
 	}
 }
 
+func TestClient_AuthorizeWithOptions(t *testing.T) {
+	const svcID = "test"
+
+	// used for testing context option
+	ctx := context.Background()
+	ctx, _ = context.WithDeadline(ctx, time.Now())
+	// used for testing instrumentation hook
+	done := make(chan bool)
+
+	inputs := []struct {
+		name           string
+		auth           api.ClientAuth
+		transaction    api.Transaction
+		expectErr      bool
+		expectErrMsg   string
+		extensions     api.Extensions
+		options        []Option
+		expectResponse *AuthorizeResponse
+		client         *Client
+		injectClient   *http.Client
+		waitForCB      bool
+	}{
+		{
+			name:         "Test context is respected",
+			auth:         api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction:  api.Transaction{Params: api.Params{AppID: "any"}},
+			options:      []Option{WithContext(ctx)},
+			expectErr:    true,
+			expectErrMsg: "context deadline exceeded",
+			client: &Client{
+				baseURL: defaultBackendUrl,
+				httpClient: &http.Client{
+					Timeout: time.Nanosecond,
+				},
+			},
+		},
+		{
+			name:        "Test instrumentation callback hook",
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
+			options:     []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusOK, "su1.3scale.net"))},
+			expectResponse: &AuthorizeResponse{
+				success:    true,
+				StatusCode: 200,
+			},
+			waitForCB: true,
+		},
+	}
+
+	for _, input := range inputs {
+		t.Run(input.name, func(t *testing.T) {
+			if input.injectClient == nil {
+				// fallback client
+				input.injectClient = NewTestClient(func(req *http.Request) *http.Response {
+					equals(t, req.URL.Path, authzEndpoint)
+					return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess()))}
+				})
+			}
+
+			c := input.client
+			if c == nil {
+				c = threeScaleTestClient(t, input.injectClient)
+			}
+
+			apiCall := threescale.Request{
+				Auth:         input.auth,
+				Extensions:   input.extensions,
+				Service:      svcID,
+				Transactions: []api.Transaction{input.transaction},
+			}
+
+			resp, err := c.AuthorizeWithOptions(apiCall, input.options...)
+			if err != nil {
+				if !input.expectErr {
+					t.Error("unexpected error")
+				}
+				// we expected an error so ensure our err conditions are met
+				if !strings.Contains(err.Error(), input.expectErrMsg) {
+					t.Errorf("expected our error message to contain substring %s", input.expectErrMsg)
+				}
+				return
+			}
+
+			if input.waitForCB {
+				<-done
+			}
+
+			equals(t, input.expectResponse, resp)
+		})
+	}
+}
+
 // because auth and auth rep essentially follow the same pattern, we can minimise the test in this instance
 // ensure our query param is correct and we are calling the correct endpoint
 func TestClient_AuthRep(t *testing.T) {
@@ -383,7 +475,6 @@ func TestClient_Report(t *testing.T) {
 		expectResponse *ReportResponse
 		client         *Client
 		injectClient   *http.Client
-		waitForCB      bool
 	}{
 		{
 			name:         "Test expect failure bad url passed",
@@ -531,6 +622,108 @@ func TestClient_Report(t *testing.T) {
 	}
 }
 
+func TestClient_ReportWithOptions(t *testing.T) {
+	const svcID = "test-id"
+
+	ctx := context.Background()
+	ctx, _ = context.WithDeadline(ctx, time.Now())
+	// used for testing instrumentation hook
+	done := make(chan bool)
+
+	inputs := []struct {
+		name           string
+		auth           api.ClientAuth
+		transactions   []api.Transaction
+		expectErr      bool
+		expectErrMsg   string
+		expectResponse *ReportResponse
+		options        []Option
+		client         *Client
+		injectClient   *http.Client
+		waitForCB      bool
+	}{{
+		name: "Test context is respected",
+		auth: api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+		transactions: []api.Transaction{
+			{
+				Params: api.Params{AppID: "any"},
+			},
+		},
+		options:      []Option{WithContext(ctx)},
+		expectErr:    true,
+		expectErrMsg: "context deadline exceeded",
+		client: &Client{
+			baseURL: defaultBackendUrl,
+			httpClient: &http.Client{
+				Timeout: time.Nanosecond,
+			},
+		},
+	},
+		{
+			name: "Test instrumentation callback hook",
+			auth: api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transactions: []api.Transaction{
+				{
+					Params: api.Params{AppID: "any"},
+				},
+			},
+			options: []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusAccepted, "su1.3scale.net"))},
+			expectResponse: &ReportResponse{
+				accepted:   true,
+				StatusCode: http.StatusAccepted,
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: http.StatusAccepted,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
+					Header:     make(http.Header),
+				}
+			}),
+			waitForCB: true,
+		}}
+
+	for _, input := range inputs {
+		t.Run(input.name, func(t *testing.T) {
+			if input.injectClient == nil {
+				// fallback client
+				input.injectClient = NewTestClient(func(req *http.Request) *http.Response {
+					equals(t, req.URL.Path, authzEndpoint)
+					return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess()))}
+				})
+			}
+
+			c := input.client
+			if c == nil {
+				c = threeScaleTestClient(t, input.injectClient)
+			}
+
+			apiCall := threescale.Request{
+				Auth:         input.auth,
+				Service:      svcID,
+				Transactions: input.transactions,
+			}
+
+			resp, err := c.ReportWithOptions(apiCall, input.options...)
+			if err != nil {
+				if !input.expectErr {
+					t.Error("unexpected error")
+				}
+				// we expected an error so ensure our err conditions are met
+				if !strings.Contains(err.Error(), input.expectErrMsg) {
+					t.Errorf("expected our error message to contain substring %s", input.expectErrMsg)
+				}
+				return
+			}
+
+			if input.waitForCB {
+				<-done
+			}
+
+			equals(t, input.expectResponse, resp)
+		})
+	}
+}
+
 func TestNewClient(t *testing.T) {
 	_, err := NewClient("ftp://invalid.com", http.DefaultClient)
 	if err == nil {
@@ -672,6 +865,20 @@ func checkExtensions(t *testing.T, req *http.Request) (bool, string) {
 		"                      but found %s",
 		strings.Join(expected, ", "), strings.Join(found, ", "))
 
+}
+
+func getInstrumentationCallback(t *testing.T, done chan bool, expectStatus int, expectHostname string) InstrumentationCB {
+	return func(ctx context.Context, hostName string, statusCode int, requestDuration time.Duration) {
+		if hostName != expectHostname {
+			t.Errorf("unexpected hostname in callback")
+		}
+
+		if statusCode != expectStatus {
+			t.Errorf("unexpected statusCode in callback")
+		}
+
+		done <- true
+	}
 }
 
 func compareUnorderedStringLists(one []string, other []string) bool {
