@@ -1,64 +1,6 @@
-package threescale
+package api
 
-import (
-	"net/http"
-	"testing"
-)
-
-func TestNewClient(t *testing.T) {
-	_, err := NewClient("ftp://invalid.com", http.DefaultClient)
-	if err == nil {
-		t.Error("expected error for invalid scheme")
-	}
-
-	c, err := NewClient(defaultBackendUrl, http.DefaultClient)
-	if err != nil {
-		t.Error("unexpected error when creating client")
-	}
-
-	if c.GetPeer() != "su1.3scale.net" {
-		t.Error("unexpected hostname set via constructor")
-	}
-}
-
-func TestNewDefaultClient(t *testing.T) {
-	c, _ := NewDefaultClient()
-
-	if c.baseURL != defaultBackendUrl {
-		t.Error("unexpected setting in default client")
-	}
-
-	if c.httpClient.Timeout != defaultTimeout {
-		t.Error("unexpected setting in default client")
-	}
-}
-
-func TestAuthorizeResponse_GetHierarchy(t *testing.T) {
-	h := make(Hierarchy)
-	h["test"] = []string{"example"}
-	resp := &AuthorizeResponse{hierarchy: h}
-
-	got := resp.GetHierarchy()
-	if len(got) != 1 {
-		t.Error("unexpected map len")
-	}
-
-	if _, ok := got["test"]; !ok {
-		t.Error("expected key to exist")
-	}
-}
-func TestAuthorizeResponse_GetUsageReports(t *testing.T) {
-	ur := make(UsageReports)
-	report := UsageReport{
-		Period:       Eternity,
-		MaxValue:     100,
-		CurrentValue: 50,
-	}
-
-	ur["test"] = report
-	resp := &AuthorizeResponse{usageReports: ur}
-	equals(t, resp.GetUsageReports()["test"], report)
-}
+import "testing"
 
 func TestHierarchy_DeepCopy(t *testing.T) {
 	h := make(Hierarchy)
@@ -160,27 +102,5 @@ func TestMetrics_DeepCopy(t *testing.T) {
 	clone["test"] = 3
 	if v, _ = original["test"]; v != 2 {
 		t.Error("unexpect value in original after modifying clone")
-	}
-}
-
-func TestRateLimits_GetLimitRemaining(t *testing.T) {
-	rl := &RateLimits{
-		limitRemaining: 100,
-		limitReset:     500,
-	}
-
-	if rl.GetLimitRemaining() != 100 {
-		t.Error("unexpected value")
-	}
-}
-
-func TestRateLimits_GetLimitReset(t *testing.T) {
-	rl := &RateLimits{
-		limitRemaining: 100,
-		limitReset:     500,
-	}
-
-	if rl.GetLimitReset() != 500 {
-		t.Error("unexpected value")
 	}
 }

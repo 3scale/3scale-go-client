@@ -1,4 +1,4 @@
-package threescale
+package http
 
 import (
 	"bytes"
@@ -17,34 +17,28 @@ import (
 	"unsafe"
 
 	"github.com/3scale/3scale-go-client/fake"
+	"github.com/3scale/3scale-go-client/threescale"
+	"github.com/3scale/3scale-go-client/threescale/api"
 )
 
 func TestClient_Authorize(t *testing.T) {
 	const svcID = "test"
 
-	// used for testing context option
-	ctx := context.Background()
-	ctx, _ = context.WithDeadline(ctx, time.Now())
-
-	// used for testing instrumentation hook
-	done := make(chan bool)
-
 	inputs := []struct {
 		name           string
-		auth           ClientAuth
-		transaction    Transaction
-		options        []Option
+		auth           api.ClientAuth
+		transaction    api.Transaction
 		expectErr      bool
 		expectErrMsg   string
+		extensions     api.Extensions
 		expectResponse *AuthorizeResponse
 		client         *Client
 		injectClient   *http.Client
-		waitForCB      bool
 	}{
 		{
 			name:         "Test expect failure bad url passed",
-			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			transaction:  Transaction{Params: Params{AppID: "any"}},
+			auth:         api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction:  api.Transaction{Params: api.Params{AppID: "any"}},
 			expectErr:    true,
 			expectErrMsg: httpReqErrText,
 			client: &Client{
@@ -55,8 +49,8 @@ func TestClient_Authorize(t *testing.T) {
 		},
 		{
 			name:         "Test expect failure simulated network error",
-			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			transaction:  Transaction{Params: Params{AppID: "any"}},
+			auth:         api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction:  api.Transaction{Params: api.Params{AppID: "any"}},
 			expectErr:    true,
 			expectErrMsg: "Timeout exceeded",
 			client: &Client{
@@ -68,8 +62,8 @@ func TestClient_Authorize(t *testing.T) {
 		},
 		{
 			name:         "Test expect failure simulated bad response from 3scale error",
-			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			transaction:  Transaction{Params: Params{AppID: "any"}},
+			auth:         api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction:  api.Transaction{Params: api.Params{AppID: "any"}},
 			expectErr:    true,
 			expectErrMsg: "EOF",
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
@@ -82,19 +76,19 @@ func TestClient_Authorize(t *testing.T) {
 		},
 		{
 			name: "Test params formatting",
-			auth: ClientAuth{
-				Type:  ServiceToken,
+			auth: api.ClientAuth{
+				Type:  api.ServiceToken,
 				Value: "any",
 			},
-			transaction: Transaction{
-				Params: Params{
+			transaction: api.Transaction{
+				Params: api.Params{
 					AppID:  "any",
 					AppKey: "key",
 				},
-				Metrics: Metrics{"hits": 1, "other": 2},
+				Metrics: api.Metrics{"hits": 1, "other": 2},
 			},
 			expectResponse: &AuthorizeResponse{
-				Success:    true,
+				success:    true,
 				StatusCode: 200,
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
@@ -114,20 +108,20 @@ func TestClient_Authorize(t *testing.T) {
 		},
 		{
 			name: "Test extension formatting",
-			auth: ClientAuth{
-				Type:  ServiceToken,
+			auth: api.ClientAuth{
+				Type:  api.ServiceToken,
 				Value: "any",
 			},
-			transaction: Transaction{
-				Params: Params{
+			transaction: api.Transaction{
+				Params: api.Params{
 					AppID: "any",
 				},
 			},
-			options: []Option{WithExtensions(getExtensions(t))},
 			expectResponse: &AuthorizeResponse{
-				Success:    true,
+				success:    true,
 				StatusCode: 200,
 			},
+			extensions: getExtensions(t),
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				ok, errMsg := checkExtensions(t, req)
 				if !ok {
@@ -143,23 +137,27 @@ func TestClient_Authorize(t *testing.T) {
 		},
 		{
 			name:        "Test usage reports",
-			auth:        ClientAuth{Type: ProviderKey, Value: "any"},
-			transaction: Transaction{Params: Params{AppID: "any"}},
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
 			expectResponse: &AuthorizeResponse{
-				Success:    true,
+				success:    true,
 				StatusCode: 200,
-				usageReports: UsageReports{
-					"hits": UsageReport{
-						Period:       Minute,
-						PeriodStart:  1550845920,
-						PeriodEnd:    1550845980,
+				usageReports: api.UsageReports{
+					"hits": api.UsageReport{
+						PeriodWindow: api.PeriodWindow{
+							Period: api.Minute,
+							Start:  1550845920,
+							End:    1550845980,
+						},
 						MaxValue:     4,
 						CurrentValue: 1,
 					},
-					"test_metric": UsageReport{
-						Period:       Week,
-						PeriodStart:  1550448000,
-						PeriodEnd:    1551052800,
+					"test_metric": api.UsageReport{
+						PeriodWindow: api.PeriodWindow{
+							Period: api.Week,
+							Start:  1550448000,
+							End:    1551052800,
+						},
 						MaxValue:     6,
 						CurrentValue: 0,
 					},
@@ -178,14 +176,14 @@ func TestClient_Authorize(t *testing.T) {
 		},
 		{
 			name:        "Test hierarchy extension",
-			auth:        ClientAuth{Type: ProviderKey, Value: "any"},
-			transaction: Transaction{Params: Params{AppID: "any"}},
-			options:     []Option{WithExtensions(Extensions{HierarchyExtension: "1"})},
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
 			expectResponse: &AuthorizeResponse{
-				Success:    true,
+				success:    true,
 				StatusCode: 200,
-				hierarchy:  Hierarchy{"hits": []string{"example", "sample", "test"}},
+				hierarchy:  api.Hierarchy{"hits": []string{"example", "sample", "test"}},
 			},
+			extensions: api.Extensions{api.HierarchyExtension: "1"},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				expectValSet := req.Header.Get("3scale-Options")
 				if expectValSet != "hierarchy=1" {
@@ -203,15 +201,15 @@ func TestClient_Authorize(t *testing.T) {
 		},
 		{
 			name:        "Test authorization extensions - rate limiting",
-			auth:        ClientAuth{Type: ProviderKey, Value: "any"},
-			transaction: Transaction{Params: Params{AppID: "any"}},
-			options:     []Option{WithExtensions(Extensions{LimitExtension: "1"})},
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
+			extensions:  api.Extensions{api.LimitExtension: "1"},
 			expectResponse: &AuthorizeResponse{
-				Success:    true,
+				success:    true,
 				StatusCode: 200,
-				RateLimits: &RateLimits{
-					limitRemaining: 5,
-					limitReset:     100,
+				rateLimits: &api.RateLimits{
+					LimitRemaining: 5,
+					LimitReset:     100,
 				},
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
@@ -235,10 +233,77 @@ func TestClient_Authorize(t *testing.T) {
 				}
 			}),
 		},
+	}
+
+	for _, input := range inputs {
+		t.Run(input.name, func(t *testing.T) {
+			if input.injectClient == nil {
+				// fallback client
+				input.injectClient = NewTestClient(func(req *http.Request) *http.Response {
+					equals(t, req.URL.Path, authzEndpoint)
+					return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess()))}
+				})
+			}
+
+			c := input.client
+			if c == nil {
+				c = threeScaleTestClient(t, input.injectClient)
+			}
+
+			apiCall := threescale.Request{
+				Auth:         input.auth,
+				Extensions:   input.extensions,
+				Service:      svcID,
+				Transactions: []api.Transaction{input.transaction},
+			}
+
+			resp, err := c.Authorize(apiCall)
+			if err != nil {
+				if !input.expectErr {
+					t.Error("unexpected error")
+				}
+				// we expected an error so ensure our err conditions are met
+				if !strings.Contains(err.Error(), input.expectErrMsg) {
+					t.Errorf("expected our error message to contain substring %s", input.expectErrMsg)
+				}
+				return
+			}
+
+			equals(t, input.expectResponse, resp)
+			equals(t, input.expectResponse.rateLimits, resp.GetRateLimits())
+			equals(t, input.expectResponse.hierarchy, resp.GetHierarchy())
+			equals(t, input.expectResponse.usageReports, resp.GetUsageReports())
+			equals(t, input.expectResponse.success, resp.Success())
+		})
+	}
+}
+
+func TestClient_AuthorizeWithOptions(t *testing.T) {
+	const svcID = "test"
+
+	// used for testing context option
+	ctx := context.Background()
+	ctx, _ = context.WithDeadline(ctx, time.Now())
+	// used for testing instrumentation hook
+	done := make(chan bool)
+
+	inputs := []struct {
+		name           string
+		auth           api.ClientAuth
+		transaction    api.Transaction
+		expectErr      bool
+		expectErrMsg   string
+		extensions     api.Extensions
+		options        []Option
+		expectResponse *AuthorizeResponse
+		client         *Client
+		injectClient   *http.Client
+		waitForCB      bool
+	}{
 		{
 			name:         "Test context is respected",
-			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			transaction:  Transaction{Params: Params{AppID: "any"}},
+			auth:         api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction:  api.Transaction{Params: api.Params{AppID: "any"}},
 			options:      []Option{WithContext(ctx)},
 			expectErr:    true,
 			expectErrMsg: "context deadline exceeded",
@@ -251,20 +316,13 @@ func TestClient_Authorize(t *testing.T) {
 		},
 		{
 			name:        "Test instrumentation callback hook",
-			auth:        ClientAuth{Type: ProviderKey, Value: "any"},
-			transaction: Transaction{Params: Params{AppID: "any"}},
-			options:     []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusOK, authzEndpoint, "su1.3scale.net"))},
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
+			options:     []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusOK, "su1.3scale.net"))},
 			expectResponse: &AuthorizeResponse{
-				Success:    true,
+				success:    true,
 				StatusCode: 200,
 			},
-			injectClient: NewTestClient(func(req *http.Request) *http.Response {
-				return &http.Response{
-					StatusCode: 200,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
-					Header:     make(http.Header),
-				}
-			}),
 			waitForCB: true,
 		},
 	}
@@ -284,7 +342,14 @@ func TestClient_Authorize(t *testing.T) {
 				c = threeScaleTestClient(t, input.injectClient)
 			}
 
-			resp, err := c.Authorize(svcID, input.auth, input.transaction, input.options...)
+			apiCall := threescale.Request{
+				Auth:         input.auth,
+				Extensions:   input.extensions,
+				Service:      svcID,
+				Transactions: []api.Transaction{input.transaction},
+			}
+
+			resp, err := c.AuthorizeWithOptions(apiCall, input.options...)
 			if err != nil {
 				if !input.expectErr {
 					t.Error("unexpected error")
@@ -308,11 +373,12 @@ func TestClient_Authorize(t *testing.T) {
 // because auth and auth rep essentially follow the same pattern, we can minimise the test in this instance
 // ensure our query param is correct and we are calling the correct endpoint
 func TestClient_AuthRep(t *testing.T) {
+	const svcID = "test"
 	type input struct {
 		name           string
-		auth           ClientAuth
-		transaction    Transaction
-		options        []Option
+		auth           api.ClientAuth
+		transaction    api.Transaction
+		extensions     api.Extensions
 		expectErr      bool
 		expectErrMsg   string
 		expectResponse *AuthorizeResponse
@@ -320,75 +386,100 @@ func TestClient_AuthRep(t *testing.T) {
 		injectClient   *http.Client
 	}
 
-	fixture := input{
-		name: "Test params formatting",
-		auth: ClientAuth{
-			Type:  ServiceToken,
-			Value: "any",
-		},
-		transaction: Transaction{
-			Params: Params{
-				AppID:  "any",
-				AppKey: "key",
+	inputs := []input{
+		{
+			name:         "Test expect failure bad url passed",
+			auth:         api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction:  api.Transaction{Params: api.Params{AppID: "any"}},
+			expectErr:    true,
+			expectErrMsg: httpReqErrText,
+			client: &Client{
+				backendHost: "/some/invalid/value%_",
+				baseURL:     "/some/invalid/value%_",
+				httpClient:  http.DefaultClient,
 			},
-			Metrics: Metrics{"hits": 1, "other": 2},
 		},
-		expectResponse: &AuthorizeResponse{
-			Success:    true,
-			StatusCode: 200,
-		},
-		injectClient: NewTestClient(func(req *http.Request) *http.Response {
-			equals(t, req.URL.Path, authRepEndpoint)
-			// decodes to app_id=any&app_key=key&service_id=test&service_token=any&usage[hits]=1&usage[other]=2
-			expect := `app_id=any&app_key=key&service_id=test&service_token=any&usage%5Bhits%5D=1&usage%5Bother%5D=2`
-
-			if req.URL.RawQuery != expect {
-				t.Error("unexpected result in query string")
-			}
-
-			return &http.Response{
+		{
+			name: "Test params formatting",
+			auth: api.ClientAuth{
+				Type:  api.ServiceToken,
+				Value: "any",
+			},
+			transaction: api.Transaction{
+				Params: api.Params{
+					AppID:  "any",
+					AppKey: "key",
+				},
+				Metrics: api.Metrics{"hits": 1, "other": 2},
+			},
+			expectResponse: &AuthorizeResponse{
+				success:    true,
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
-				Header:     make(http.Header),
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				equals(t, req.URL.Path, authRepEndpoint)
+				// decodes to app_id=any&app_key=key&service_id=test&service_token=any&usage[hits]=1&usage[other]=2
+				expect := `app_id=any&app_key=key&service_id=test&service_token=any&usage%5Bhits%5D=1&usage%5Bother%5D=2`
+
+				if req.URL.RawQuery != expect {
+					t.Error("unexpected result in query string")
+				}
+
+				return &http.Response{
+					StatusCode: 200,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
+					Header:     make(http.Header),
+				}
+			}),
+		},
+	}
+
+	for _, fixture := range inputs {
+		c := fixture.client
+		if c == nil {
+			c = threeScaleTestClient(t, fixture.injectClient)
+		}
+
+		apiCall := threescale.Request{
+			Auth:         fixture.auth,
+			Extensions:   fixture.extensions,
+			Service:      svcID,
+			Transactions: []api.Transaction{fixture.transaction},
+		}
+
+		resp, err := c.AuthRep(apiCall)
+		if err != nil {
+			if !fixture.expectErr {
+				t.Error("unexpected error")
 			}
-		}),
+			// we expected an error so ensure our err conditions are met
+			if !strings.Contains(err.Error(), fixture.expectErrMsg) {
+				t.Errorf("expected our error message to contain substring %s", fixture.expectErrMsg)
+			}
+			return
+		}
+		equals(t, fixture.expectResponse, resp)
 	}
-	const svcID = "test"
-	c := threeScaleTestClient(t, fixture.injectClient)
-	resp, err := c.AuthRep(svcID, fixture.auth, fixture.transaction, fixture.options...)
-	if err != nil {
-		t.Error("unexpected error")
-	}
-	equals(t, fixture.expectResponse, resp)
 
 }
 
 func TestClient_Report(t *testing.T) {
 	const svcID = "test-id"
 
-	// used for testing context option
-	ctx := context.Background()
-	ctx, _ = context.WithDeadline(ctx, time.Now())
-
-	// used for testing instrumentation hook
-	done := make(chan bool)
-
 	inputs := []struct {
 		name           string
-		auth           ClientAuth
-		transactions   []Transaction
-		options        []Option
+		auth           api.ClientAuth
+		transactions   []api.Transaction
 		expectErr      bool
 		expectErrMsg   string
 		expectResponse *ReportResponse
 		client         *Client
 		injectClient   *http.Client
-		waitForCB      bool
 	}{
 		{
 			name:         "Test expect failure bad url passed",
-			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			transactions: []Transaction{{Params: Params{AppID: "any"}}},
+			auth:         api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transactions: []api.Transaction{{Params: api.Params{AppID: "any"}}},
 			expectErr:    true,
 			expectErrMsg: httpReqErrText,
 			client: &Client{
@@ -399,8 +490,8 @@ func TestClient_Report(t *testing.T) {
 		},
 		{
 			name:         "Test expect failure simulated network error",
-			auth:         ClientAuth{Type: ProviderKey, Value: "any"},
-			transactions: []Transaction{{Params: Params{AppID: "any"}}},
+			auth:         api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transactions: []api.Transaction{{Params: api.Params{AppID: "any"}}},
 			expectErr:    true,
 			expectErrMsg: "Timeout exceeded",
 			client: &Client{
@@ -412,10 +503,10 @@ func TestClient_Report(t *testing.T) {
 		},
 		{
 			name: "Test expect failure simulated bad response from 3scale error",
-			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			transactions: []Transaction{
+			auth: api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transactions: []api.Transaction{
 				{
-					Params: Params{
+					Params: api.Params{
 						AppID: "any",
 					},
 				},
@@ -432,16 +523,16 @@ func TestClient_Report(t *testing.T) {
 		},
 		{
 			name: "Test expect failure 403",
-			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			transactions: []Transaction{
+			auth: api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transactions: []api.Transaction{
 				{
-					Params: Params{
+					Params: api.Params{
 						UserKey: "any",
 					},
 				},
 			},
 			expectResponse: &ReportResponse{
-				Accepted:   false,
+				accepted:   false,
 				Reason:     "user_key_invalid",
 				StatusCode: http.StatusForbidden,
 			},
@@ -455,26 +546,26 @@ func TestClient_Report(t *testing.T) {
 		},
 		{
 			name: "Test params formatting",
-			auth: ClientAuth{
-				Type:  ServiceToken,
+			auth: api.ClientAuth{
+				Type:  api.ServiceToken,
 				Value: "st",
 			},
-			transactions: []Transaction{
+			transactions: []api.Transaction{
 				{
-					Params: Params{
+					Params: api.Params{
 						UserKey: "test",
 					},
-					Metrics: Metrics{"hits": 1},
+					Metrics: api.Metrics{"hits": 1},
 				},
 				{
-					Params: Params{
+					Params: api.Params{
 						UserKey: "test-2",
 					},
-					Metrics: Metrics{"hits": 1, "other": 2},
+					Metrics: api.Metrics{"hits": 1, "other": 2},
 				},
 			},
 			expectResponse: &ReportResponse{
-				Accepted:   true,
+				accepted:   true,
 				StatusCode: http.StatusAccepted,
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
@@ -489,46 +580,6 @@ func TestClient_Report(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			}),
-		},
-		{
-			name: "Test context is respected",
-			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			transactions: []Transaction{
-				{
-					Params: Params{AppID: "any"},
-				},
-			},
-			options:      []Option{WithContext(ctx)},
-			expectErr:    true,
-			expectErrMsg: "context deadline exceeded",
-			client: &Client{
-				baseURL: defaultBackendUrl,
-				httpClient: &http.Client{
-					Timeout: time.Nanosecond,
-				},
-			},
-		},
-		{
-			name: "Test instrumentation callback hook",
-			auth: ClientAuth{Type: ProviderKey, Value: "any"},
-			transactions: []Transaction{
-				{
-					Params: Params{AppID: "any"},
-				},
-			},
-			options: []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusAccepted, reportEndpoint, "su1.3scale.net"))},
-			expectResponse: &ReportResponse{
-				Accepted:   true,
-				StatusCode: http.StatusAccepted,
-			},
-			injectClient: NewTestClient(func(req *http.Request) *http.Response {
-				return &http.Response{
-					StatusCode: http.StatusAccepted,
-					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
-					Header:     make(http.Header),
-				}
-			}),
-			waitForCB: true,
 		},
 	}
 
@@ -548,7 +599,13 @@ func TestClient_Report(t *testing.T) {
 				c = threeScaleTestClient(t, input.injectClient)
 			}
 
-			resp, err := c.Report(svcID, input.auth, input.transactions, input.options...)
+			apiCall := threescale.Request{
+				Auth:         input.auth,
+				Service:      svcID,
+				Transactions: input.transactions,
+			}
+
+			resp, err := c.Report(apiCall)
 			if err != nil {
 				if !input.expectErr {
 					t.Error("unexpected error")
@@ -560,7 +617,138 @@ func TestClient_Report(t *testing.T) {
 				return
 			}
 			equals(t, input.expectResponse, resp)
+			equals(t, input.expectResponse.accepted, resp.Accepted())
 		})
+	}
+}
+
+func TestClient_ReportWithOptions(t *testing.T) {
+	const svcID = "test-id"
+
+	ctx := context.Background()
+	ctx, _ = context.WithDeadline(ctx, time.Now())
+	// used for testing instrumentation hook
+	done := make(chan bool)
+
+	inputs := []struct {
+		name           string
+		auth           api.ClientAuth
+		transactions   []api.Transaction
+		expectErr      bool
+		expectErrMsg   string
+		expectResponse *ReportResponse
+		options        []Option
+		client         *Client
+		injectClient   *http.Client
+		waitForCB      bool
+	}{{
+		name: "Test context is respected",
+		auth: api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+		transactions: []api.Transaction{
+			{
+				Params: api.Params{AppID: "any"},
+			},
+		},
+		options:      []Option{WithContext(ctx)},
+		expectErr:    true,
+		expectErrMsg: "context deadline exceeded",
+		client: &Client{
+			baseURL: defaultBackendUrl,
+			httpClient: &http.Client{
+				Timeout: time.Nanosecond,
+			},
+		},
+	},
+		{
+			name: "Test instrumentation callback hook",
+			auth: api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transactions: []api.Transaction{
+				{
+					Params: api.Params{AppID: "any"},
+				},
+			},
+			options: []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusAccepted, "su1.3scale.net"))},
+			expectResponse: &ReportResponse{
+				accepted:   true,
+				StatusCode: http.StatusAccepted,
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: http.StatusAccepted,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess())),
+					Header:     make(http.Header),
+				}
+			}),
+			waitForCB: true,
+		}}
+
+	for _, input := range inputs {
+		t.Run(input.name, func(t *testing.T) {
+			if input.injectClient == nil {
+				// fallback client
+				input.injectClient = NewTestClient(func(req *http.Request) *http.Response {
+					equals(t, req.URL.Path, authzEndpoint)
+					return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBufferString(fake.GetAuthSuccess()))}
+				})
+			}
+
+			c := input.client
+			if c == nil {
+				c = threeScaleTestClient(t, input.injectClient)
+			}
+
+			apiCall := threescale.Request{
+				Auth:         input.auth,
+				Service:      svcID,
+				Transactions: input.transactions,
+			}
+
+			resp, err := c.ReportWithOptions(apiCall, input.options...)
+			if err != nil {
+				if !input.expectErr {
+					t.Error("unexpected error")
+				}
+				// we expected an error so ensure our err conditions are met
+				if !strings.Contains(err.Error(), input.expectErrMsg) {
+					t.Errorf("expected our error message to contain substring %s", input.expectErrMsg)
+				}
+				return
+			}
+
+			if input.waitForCB {
+				<-done
+			}
+
+			equals(t, input.expectResponse, resp)
+		})
+	}
+}
+
+func TestNewClient(t *testing.T) {
+	_, err := NewClient("ftp://invalid.com", http.DefaultClient)
+	if err == nil {
+		t.Error("expected error for invalid scheme")
+	}
+
+	c, err := NewClient(defaultBackendUrl, http.DefaultClient)
+	if err != nil {
+		t.Error("unexpected error when creating client")
+	}
+
+	if c.GetPeer() != "su1.3scale.net" {
+		t.Error("unexpected hostname set via constructor")
+	}
+}
+
+func TestNewDefaultClient(t *testing.T) {
+	c, _ := NewDefaultClient()
+
+	if c.baseURL != defaultBackendUrl {
+		t.Error("unexpected setting in default client")
+	}
+
+	if c.httpClient.Timeout != defaultTimeout {
+		t.Error("unexpected setting in default client")
 	}
 }
 
@@ -679,6 +867,20 @@ func checkExtensions(t *testing.T, req *http.Request) (bool, string) {
 
 }
 
+func getInstrumentationCallback(t *testing.T, done chan bool, expectStatus int, expectHostname string) InstrumentationCB {
+	return func(ctx context.Context, hostName string, statusCode int, requestDuration time.Duration) {
+		if hostName != expectHostname {
+			t.Errorf("unexpected hostname in callback")
+		}
+
+		if statusCode != expectStatus {
+			t.Errorf("unexpected statusCode in callback")
+		}
+
+		done <- true
+	}
+}
+
 func compareUnorderedStringLists(one []string, other []string) bool {
 	if len(one) != len(other) {
 		return false
@@ -700,24 +902,6 @@ func compareUnorderedStringLists(one []string, other []string) bool {
 	}
 
 	return true
-}
-
-func getInstrumentationCallback(t *testing.T, done chan bool, expectStatus int, expectEndpoint, expectHostname string) InstrumentationCB {
-	return func(ctx context.Context, hostName, endpoint string, statusCode int, requestDuration time.Duration) {
-		if hostName != expectHostname {
-			t.Errorf("unexpected hostname in callback")
-		}
-
-		if endpoint != expectEndpoint {
-			t.Errorf("unexpected endpoint in callback")
-		}
-
-		if statusCode != expectStatus {
-			t.Errorf("unexpected statusCode in callback")
-		}
-
-		done <- true
-	}
 }
 
 // ******
