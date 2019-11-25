@@ -19,6 +19,14 @@ const (
 	// HierarchyExtension is the key to enabling hierarchy feature. Set its bool value to 1 to enable.
 	// https://github.com/3scale/apisonator/issues/75
 	HierarchyExtension = "hierarchy"
+
+	// FlatUsageExtension is the key to enabling the "flat usage" feature for reporting purposes - set to 1 to enable
+	// Enabling this feature implies that the backend will not calculate the relationships between hierarchies and
+	// pushes this compute responsibility back to the client.
+	// Therefore when enabled, it is the clients responsibility to ensure that parent --> child metrics
+	// are calculated correctly. This feature is supported in versions >= 2.8
+	// Use the GetVersion() function to ensure suitability or risk incurring unreported state.
+	FlatUsageExtension = "flat_usage"
 )
 
 // Period wraps the known rate limiting periods as defined in 3scale

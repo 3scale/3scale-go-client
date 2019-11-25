@@ -130,6 +130,7 @@ func (c *Client) ReportWithOptions(apiCall threescale.Request, options ...Option
 	return c.doReport(apiCall, newOptions(options...))
 }
 
+// GetPeer returns the hostname of the backend for the client
 func (c *Client) GetPeer() string {
 	return c.backendHost
 }
