@@ -1,4 +1,4 @@
-## 3Scale Service Management API Client
+## 3scale Service Management API Client
 
 [![CircleCI](https://circleci.com/gh/3scale/3scale-go-client/tree/master.svg?style=svg)](https://circleci.com/gh/3scale/3scale-go-client/tree/master)
 [![Go Report](https://goreportcard.com/badge/github.com/3scale/3scale-go-client)](https://goreportcard.com/badge/github.com/3scale/3scale-go-client)
