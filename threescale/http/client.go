@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -20,6 +21,8 @@ const (
 	authzEndpoint   = "/transactions/authorize.xml"
 	authRepEndpoint = "/transactions/authrep.xml"
 	reportEndpoint  = "/transactions.xml"
+
+	statusEndpoint = "/status"
 )
 
 const (
@@ -127,8 +130,34 @@ func (c *Client) ReportWithOptions(apiCall threescale.Request, options ...Option
 	return c.doReport(apiCall, newOptions(options...))
 }
 
+// GetPeer returns the hostname of the backend for the client
 func (c *Client) GetPeer() string {
 	return c.backendHost
+}
+
+// GetVersion returns the version of the backend for this client (remote call)
+func (c *Client) GetVersion() (string, error) {
+	var version string
+	var statusResponse internal.StatusResponse
+
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+statusEndpoint, nil)
+	if err != nil {
+		return version, fmt.Errorf("failed to build request for status endpoint - %s", err.Error())
+	}
+	req.Header.Set("Accept", "application/xml")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return version, fmt.Errorf("failed to fetch backend version - %s", err.Error())
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(&statusResponse)
+	if err != nil {
+		return version, fmt.Errorf("failed to fetch backend version - %s", err.Error())
+	}
+
+	return statusResponse.Version.Backend, nil
 }
 
 func (c *Client) doAuthOrAuthRep(apiCall threescale.Request, kind kind, options *Options) (*AuthorizeResponse, error) {
