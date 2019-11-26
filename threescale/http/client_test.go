@@ -724,6 +724,68 @@ func TestClient_ReportWithOptions(t *testing.T) {
 	}
 }
 
+func TestClient_GetVersion(t *testing.T) {
+	// expect err on simulate network err
+	c := &Client{
+		httpClient: &http.Client{
+			Transport:     nil,
+			CheckRedirect: nil,
+			Jar:           nil,
+			Timeout:       time.Nanosecond,
+		},
+	}
+	_, err := c.GetVersion()
+	if err == nil {
+		t.Error("expected network err caused by timeout exceeded")
+	}
+
+	// expect err on badly configured client
+	c = &Client{
+		backendHost: "/some/invalid/value%_",
+		baseURL:     "/some/invalid/value%_",
+		httpClient: &http.Client{
+			Transport:     nil,
+			CheckRedirect: nil,
+			Jar:           nil,
+			Timeout:       time.Nanosecond,
+		},
+	}
+	_, err = c.GetVersion()
+	if err == nil {
+		t.Error("expected err building request")
+	}
+
+	// expect err on decode err
+	httpClientTriggerDecodeErr := NewTestClient(func(req *http.Request) *http.Response {
+		equals(t, req.URL.Path, statusEndpoint)
+		resp := `not-json`
+		return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBufferString(resp))}
+	})
+	c = threeScaleTestClient(t, httpClientTriggerDecodeErr)
+	_, err = c.GetVersion()
+	if err == nil {
+		t.Error("expected err decoding json")
+	}
+
+	// happy path
+	httpClientSuccess := NewTestClient(func(req *http.Request) *http.Response {
+		equals(t, req.URL.Path, statusEndpoint)
+		resp := `{"status":"ok","version":{"backend":"2.96.2"}}`
+		return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(bytes.NewBufferString(resp))}
+	})
+
+	c = threeScaleTestClient(t, httpClientSuccess)
+	version, err := c.GetVersion()
+	if err != nil {
+		t.Error("unexpected error calling GetVersion()")
+	}
+
+	if version != "2.96.2" {
+		t.Error("unexpected result calling GetVersion()")
+	}
+
+}
+
 func TestNewClient(t *testing.T) {
 	_, err := NewClient("ftp://invalid.com", http.DefaultClient)
 	if err == nil {
