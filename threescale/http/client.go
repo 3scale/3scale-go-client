@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/3scale/3scale-go-client/threescale"
-
 	"github.com/3scale/3scale-go-client/threescale/api"
 	"github.com/3scale/3scale-go-client/threescale/internal"
 )
@@ -47,35 +46,11 @@ var (
 	errHttpReq = errors.New(httpReqErrText)
 )
 
-type WrappedRequest struct {
-	threescale.Request
-}
-
 // Client interacts with 3scale Service Management API and implements a threescale client
 type Client struct {
 	backendHost string
 	baseURL     string
 	httpClient  *http.Client
-}
-
-// AuthorizeResponse from 3scale backend when calling the Authorize and AuthRep endpoints
-type AuthorizeResponse struct {
-	// Reason provides the reason for rejection in case the report failed - expect "" on 2xx StatusCode
-	Reason     string
-	StatusCode int
-	hierarchy  api.Hierarchy
-	// nil value indicates 'limit_headers' extension not in use or parsing error with 3scale response.
-	rateLimits   *api.RateLimits
-	success      bool
-	usageReports api.UsageReports
-}
-
-// ReportResponse is the object returned when a successful call to the Report API is made
-type ReportResponse struct {
-	accepted bool
-	// Reason provides the reason for rejection in case the report failed - expect "" on 2xx StatusCode
-	Reason     string
-	StatusCode int
 }
 
 // NewClient returns a pointer to a Client providing some verification and sanity checking
@@ -101,32 +76,32 @@ func NewDefaultClient() (*Client, error) {
 }
 
 // Authorize is a read-only operation to authorize an application with the authentication provided in the transaction params
-func (c *Client) Authorize(apiCall threescale.Request) (threescale.AuthorizeResult, error) {
+func (c *Client) Authorize(apiCall threescale.Request) (*threescale.AuthorizeResult, error) {
 	return c.AuthorizeWithOptions(apiCall)
 }
 
 // AuthorizeWithOptions provides the same behaviour as Authorize with additional functionality provided by Option(s)
-func (c *Client) AuthorizeWithOptions(apiCall threescale.Request, options ...Option) (threescale.AuthorizeResult, error) {
+func (c *Client) AuthorizeWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
 	return c.doAuthOrAuthRep(apiCall, auth, newOptions(options...))
 }
 
 // AuthRep should be used to authorize and report, in a single transaction
 // for an application with the authentication provided in the transaction params
-func (c *Client) AuthRep(apiCall threescale.Request) (threescale.AuthorizeResult, error) {
+func (c *Client) AuthRep(apiCall threescale.Request) (*threescale.AuthorizeResult, error) {
 	return c.AuthRepWithOptions(apiCall)
 }
 
 // AuthRepWithOptions provides the same behaviour as AuthRep with additional functionality provided by Option(s)
-func (c *Client) AuthRepWithOptions(apiCall threescale.Request, options ...Option) (threescale.AuthorizeResult, error) {
+func (c *Client) AuthRepWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
 	return c.doAuthOrAuthRep(apiCall, authRep, newOptions(options...))
 }
 
-func (c *Client) Report(apiCall threescale.Request) (threescale.ReportResult, error) {
+func (c *Client) Report(apiCall threescale.Request) (*threescale.ReportResult, error) {
 	return c.ReportWithOptions(apiCall)
 }
 
 // ReportWithOptions provides the same behaviour as Report with additional functionality provided by Option(s)
-func (c *Client) ReportWithOptions(apiCall threescale.Request, options ...Option) (threescale.ReportResult, error) {
+func (c *Client) ReportWithOptions(apiCall threescale.Request, options ...Option) (*threescale.ReportResult, error) {
 	return c.doReport(apiCall, newOptions(options...))
 }
 
@@ -160,7 +135,7 @@ func (c *Client) GetVersion() (string, error) {
 	return statusResponse.Version.Backend, nil
 }
 
-func (c *Client) doAuthOrAuthRep(apiCall threescale.Request, kind kind, options *Options) (*AuthorizeResponse, error) {
+func (c *Client) doAuthOrAuthRep(apiCall threescale.Request, kind kind, options *Options) (*threescale.AuthorizeResult, error) {
 	req, err := requestBuilder{}.build(apiCall, c.baseURL, kind)
 	if err != nil {
 		return nil, c.wrapError(err)
@@ -169,7 +144,7 @@ func (c *Client) doAuthOrAuthRep(apiCall threescale.Request, kind kind, options 
 	return c.executeAuthCall(req, apiCall.Extensions, options)
 }
 
-func (c *Client) doReport(apiCall threescale.Request, options *Options) (*ReportResponse, error) {
+func (c *Client) doReport(apiCall threescale.Request, options *Options) (*threescale.ReportResult, error) {
 	req, err := requestBuilder{}.build(apiCall, c.baseURL, report)
 	if err != nil {
 		return nil, c.wrapError(err)
@@ -178,7 +153,7 @@ func (c *Client) doReport(apiCall threescale.Request, options *Options) (*Report
 	return c.executeReportCall(req, apiCall.Extensions, options)
 }
 
-func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, options *Options) (*AuthorizeResponse, error) {
+func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, options *Options) (*threescale.AuthorizeResult, error) {
 	var xmlResponse internal.AuthResponseXML
 
 	if options != nil && options.context != nil {
@@ -202,14 +177,14 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 	if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
 		return nil, err
 	}
-	response := &AuthorizeResponse{
-		Reason:     xmlResponse.Code,
-		success:    xmlResponse.Authorized,
-		StatusCode: resp.StatusCode,
+	response := &threescale.AuthorizeResult{
+		Authorized:          xmlResponse.Authorized,
+		ErrorCode:           xmlResponse.Code,
+		AuthorizeExtensions: threescale.AuthorizeExtensions{},
 	}
 
 	if reportLen := len(xmlResponse.UsageReports.Reports); reportLen > 0 {
-		response.usageReports = c.convertXmlUsageReports(xmlResponse.UsageReports.Reports, reportLen)
+		response.UsageReports = c.convertXmlUsageReports(xmlResponse.UsageReports.Reports, reportLen)
 	}
 
 	if extensions != nil {
@@ -219,7 +194,7 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 	return response, err
 }
 
-func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions, options *Options) (*ReportResponse, error) {
+func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions, options *Options) (*threescale.ReportResult, error) {
 	var xmlResponse internal.ReportErrorXML
 
 	if options != nil && options.context != nil {
@@ -246,28 +221,26 @@ func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions,
 		if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
 			return nil, err
 		}
-		return &ReportResponse{
-			accepted:   false,
-			Reason:     xmlResponse.Code,
-			StatusCode: resp.StatusCode,
+		return &threescale.ReportResult{
+			Accepted:  false,
+			ErrorCode: xmlResponse.Code,
 		}, nil
 	}
 
-	return &ReportResponse{
-		accepted:   true,
-		StatusCode: resp.StatusCode,
+	return &threescale.ReportResult{
+		Accepted: true,
 	}, nil
 }
 
 // handleAuthExtensions handles known extensions
 // extensions must not be nil
-func (c *Client) handleAuthExtensions(xmlResp internal.AuthResponseXML, resp *http.Response, extensions api.Extensions, annotatedResp *AuthorizeResponse) *AuthorizeResponse {
+func (c *Client) handleAuthExtensions(xmlResp internal.AuthResponseXML, resp *http.Response, extensions api.Extensions, annotatedResp *threescale.AuthorizeResult) *threescale.AuthorizeResult {
 	if _, ok := extensions[api.HierarchyExtension]; ok {
-		annotatedResp.hierarchy = c.convertXmlHierarchy(xmlResp.Hierarchy)
+		annotatedResp.Hierarchy = c.convertXmlHierarchy(xmlResp.Hierarchy)
 	}
 
 	if _, ok := extensions[api.LimitExtension]; ok {
-		annotatedResp.rateLimits = c.handleRateLimitExtensions(resp)
+		annotatedResp.RateLimits = c.handleRateLimitExtensions(resp)
 	}
 
 	return annotatedResp
@@ -322,31 +295,6 @@ func (c *Client) handleRateLimitExtensions(resp *http.Response) *api.RateLimits 
 
 func (c *Client) wrapError(err error) error {
 	return fmt.Errorf("%s - %s ", errHttpReq.Error(), err.Error())
-}
-
-// GetRateLimits for auth/authrep request if the extension was enabled
-func (ar AuthorizeResponse) GetRateLimits() *api.RateLimits {
-	return ar.rateLimits
-}
-
-// GetHierarchy returns the responses Hierarchy if the extension was enabled
-func (ar AuthorizeResponse) GetHierarchy() api.Hierarchy {
-	return ar.hierarchy
-}
-
-// GetUsageReports returns the responses UsageReports if the extension was enabled
-func (ar AuthorizeResponse) GetUsageReports() api.UsageReports {
-	return ar.usageReports
-}
-
-// GetUsageReports returns the responses UsageReports if the extension was enabled
-func (ar AuthorizeResponse) Success() bool {
-	return ar.success
-}
-
-// Accepted returns true if the report request has been accepted for processing by 3scale
-func (rr ReportResponse) Accepted() bool {
-	return rr.accepted
 }
 
 type kind int
