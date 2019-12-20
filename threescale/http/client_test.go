@@ -31,7 +31,7 @@ func TestClient_Authorize(t *testing.T) {
 		expectErr      bool
 		expectErrMsg   string
 		extensions     api.Extensions
-		expectResponse *AuthorizeResponse
+		expectResponse *threescale.AuthorizeResult
 		client         *Client
 		injectClient   *http.Client
 	}{
@@ -87,9 +87,8 @@ func TestClient_Authorize(t *testing.T) {
 				},
 				Metrics: api.Metrics{"hits": 1, "other": 2},
 			},
-			expectResponse: &AuthorizeResponse{
-				success:    true,
-				StatusCode: 200,
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: true,
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				// decodes to app_id=any&app_key=key&service_id=test&service_token=any&usage[hits]=1&usage[other]=2
@@ -117,9 +116,8 @@ func TestClient_Authorize(t *testing.T) {
 					AppID: "any",
 				},
 			},
-			expectResponse: &AuthorizeResponse{
-				success:    true,
-				StatusCode: 200,
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: true,
 			},
 			extensions: getExtensions(t),
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
@@ -139,27 +137,28 @@ func TestClient_Authorize(t *testing.T) {
 			name:        "Test usage reports",
 			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
 			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
-			expectResponse: &AuthorizeResponse{
-				success:    true,
-				StatusCode: 200,
-				usageReports: api.UsageReports{
-					"hits": api.UsageReport{
-						PeriodWindow: api.PeriodWindow{
-							Period: api.Minute,
-							Start:  1550845920,
-							End:    1550845980,
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: true,
+				AuthorizeExtensions: threescale.AuthorizeExtensions{
+					UsageReports: api.UsageReports{
+						"hits": api.UsageReport{
+							PeriodWindow: api.PeriodWindow{
+								Period: api.Minute,
+								Start:  1550845920,
+								End:    1550845980,
+							},
+							MaxValue:     4,
+							CurrentValue: 1,
 						},
-						MaxValue:     4,
-						CurrentValue: 1,
-					},
-					"test_metric": api.UsageReport{
-						PeriodWindow: api.PeriodWindow{
-							Period: api.Week,
-							Start:  1550448000,
-							End:    1551052800,
+						"test_metric": api.UsageReport{
+							PeriodWindow: api.PeriodWindow{
+								Period: api.Week,
+								Start:  1550448000,
+								End:    1551052800,
+							},
+							MaxValue:     6,
+							CurrentValue: 0,
 						},
-						MaxValue:     6,
-						CurrentValue: 0,
 					},
 				},
 			},
@@ -178,10 +177,11 @@ func TestClient_Authorize(t *testing.T) {
 			name:        "Test hierarchy extension",
 			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
 			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
-			expectResponse: &AuthorizeResponse{
-				success:    true,
-				StatusCode: 200,
-				hierarchy:  api.Hierarchy{"hits": []string{"example", "sample", "test"}},
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: true,
+				AuthorizeExtensions: threescale.AuthorizeExtensions{
+					Hierarchy: api.Hierarchy{"hits": []string{"example", "sample", "test"}},
+				},
 			},
 			extensions: api.Extensions{api.HierarchyExtension: "1"},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
@@ -204,12 +204,13 @@ func TestClient_Authorize(t *testing.T) {
 			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
 			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
 			extensions:  api.Extensions{api.LimitExtension: "1"},
-			expectResponse: &AuthorizeResponse{
-				success:    true,
-				StatusCode: 200,
-				rateLimits: &api.RateLimits{
-					LimitRemaining: 5,
-					LimitReset:     100,
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: true,
+				AuthorizeExtensions: threescale.AuthorizeExtensions{
+					RateLimits: &api.RateLimits{
+						LimitRemaining: 5,
+						LimitReset:     100,
+					},
 				},
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
@@ -270,10 +271,10 @@ func TestClient_Authorize(t *testing.T) {
 			}
 
 			equals(t, input.expectResponse, resp)
-			equals(t, input.expectResponse.rateLimits, resp.GetRateLimits())
-			equals(t, input.expectResponse.hierarchy, resp.GetHierarchy())
-			equals(t, input.expectResponse.usageReports, resp.GetUsageReports())
-			equals(t, input.expectResponse.success, resp.Success())
+			equals(t, input.expectResponse.RateLimits, resp.RateLimits)
+			equals(t, input.expectResponse.Hierarchy, resp.Hierarchy)
+			equals(t, input.expectResponse.UsageReports, resp.UsageReports)
+			equals(t, input.expectResponse.Authorized, resp.Authorized)
 		})
 	}
 }
@@ -295,7 +296,7 @@ func TestClient_AuthorizeWithOptions(t *testing.T) {
 		expectErrMsg   string
 		extensions     api.Extensions
 		options        []Option
-		expectResponse *AuthorizeResponse
+		expectResponse *threescale.AuthorizeResult
 		client         *Client
 		injectClient   *http.Client
 		waitForCB      bool
@@ -319,9 +320,8 @@ func TestClient_AuthorizeWithOptions(t *testing.T) {
 			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
 			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
 			options:     []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusOK, "su1.3scale.net"))},
-			expectResponse: &AuthorizeResponse{
-				success:    true,
-				StatusCode: 200,
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: true,
 			},
 			waitForCB: true,
 		},
@@ -381,7 +381,7 @@ func TestClient_AuthRep(t *testing.T) {
 		extensions     api.Extensions
 		expectErr      bool
 		expectErrMsg   string
-		expectResponse *AuthorizeResponse
+		expectResponse *threescale.AuthorizeResult
 		client         *Client
 		injectClient   *http.Client
 	}
@@ -412,9 +412,8 @@ func TestClient_AuthRep(t *testing.T) {
 				},
 				Metrics: api.Metrics{"hits": 1, "other": 2},
 			},
-			expectResponse: &AuthorizeResponse{
-				success:    true,
-				StatusCode: 200,
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: true,
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				equals(t, req.URL.Path, authRepEndpoint)
@@ -472,7 +471,7 @@ func TestClient_Report(t *testing.T) {
 		transactions   []api.Transaction
 		expectErr      bool
 		expectErrMsg   string
-		expectResponse *ReportResponse
+		expectResponse *threescale.ReportResult
 		client         *Client
 		injectClient   *http.Client
 	}{
@@ -531,10 +530,9 @@ func TestClient_Report(t *testing.T) {
 					},
 				},
 			},
-			expectResponse: &ReportResponse{
-				accepted:   false,
-				Reason:     "user_key_invalid",
-				StatusCode: http.StatusForbidden,
+			expectResponse: &threescale.ReportResult{
+				Accepted:  false,
+				ErrorCode: "user_key_invalid",
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				return &http.Response{
@@ -564,9 +562,8 @@ func TestClient_Report(t *testing.T) {
 					Metrics: api.Metrics{"hits": 1, "other": 2},
 				},
 			},
-			expectResponse: &ReportResponse{
-				accepted:   true,
-				StatusCode: http.StatusAccepted,
+			expectResponse: &threescale.ReportResult{
+				Accepted: true,
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				// we know that Encode will sort by keys so we can predict this output
@@ -617,7 +614,7 @@ func TestClient_Report(t *testing.T) {
 				return
 			}
 			equals(t, input.expectResponse, resp)
-			equals(t, input.expectResponse.accepted, resp.Accepted())
+			equals(t, input.expectResponse.Accepted, resp.Accepted)
 		})
 	}
 }
@@ -636,7 +633,7 @@ func TestClient_ReportWithOptions(t *testing.T) {
 		transactions   []api.Transaction
 		expectErr      bool
 		expectErrMsg   string
-		expectResponse *ReportResponse
+		expectResponse *threescale.ReportResult
 		options        []Option
 		client         *Client
 		injectClient   *http.Client
@@ -668,9 +665,8 @@ func TestClient_ReportWithOptions(t *testing.T) {
 				},
 			},
 			options: []Option{WithInstrumentationCallback(getInstrumentationCallback(t, done, http.StatusAccepted, "su1.3scale.net"))},
-			expectResponse: &ReportResponse{
-				accepted:   true,
-				StatusCode: http.StatusAccepted,
+			expectResponse: &threescale.ReportResult{
+				Accepted: true,
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				return &http.Response{
