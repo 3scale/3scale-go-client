@@ -174,6 +174,10 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 		}
 	}()
 
+	if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
+		return nil, err
+	}
+
 	// because its non-deterministic where the error message should be retrieved from, we need to do this.
 	// for example when rate limits are exceeded it is set in 'Reason' but for most other errors it is set in 'Code'
 	var errCode = xmlResponse.Code
@@ -181,9 +185,6 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 		errCode = xmlResponse.Reason
 	}
 
-	if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
-		return nil, err
-	}
 	response := &threescale.AuthorizeResult{
 		Authorized:          xmlResponse.Authorized,
 		ErrorCode:           errCode,
