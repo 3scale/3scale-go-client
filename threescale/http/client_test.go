@@ -75,6 +75,56 @@ func TestClient_Authorize(t *testing.T) {
 			}),
 		},
 		{
+			name: "Test 3scale errors are propagated - invalid metric",
+			auth: api.ClientAuth{
+				Type:  api.ServiceToken,
+				Value: "any",
+			},
+			transaction: api.Transaction{
+				Params: api.Params{
+					AppID:  "any",
+					AppKey: "key",
+				},
+				Metrics: api.Metrics{"hits": 1, "other": 2},
+			},
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: false,
+				ErrorCode:  "metric_invalid",
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetInvalidMetricResp())),
+					Header:     make(http.Header),
+				}
+			}),
+		},
+		{
+			name: "Test 3scale errors are propagated - invalid auth",
+			auth: api.ClientAuth{
+				Type:  api.ServiceToken,
+				Value: "any",
+			},
+			transaction: api.Transaction{
+				Params: api.Params{
+					AppID:  "any",
+					AppKey: "key",
+				},
+				Metrics: api.Metrics{"hits": 1, "other": 2},
+			},
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: false,
+				ErrorCode:  "user_key_invalid",
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GenInvalidUserKey("fake"))),
+					Header:     make(http.Header),
+				}
+			}),
+		},
+		{
 			name: "Test params formatting",
 			auth: api.ClientAuth{
 				Type:  api.ServiceToken,
