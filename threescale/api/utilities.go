@@ -1,6 +1,8 @@
 package api
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // DeepCopy returns a clone of the original Metrics. It provides a deep copy
 // of both the key and the value of the original Hierarchy.
@@ -12,6 +14,26 @@ func (h Hierarchy) DeepCopy() Hierarchy {
 		clone[k] = clonedV
 	}
 	return clone
+}
+
+// ComputeAffectedMetrics takes the provided hierarchy structure, and uses it
+// to determine how the metrics, m, are affected.
+// Returns new Metrics, leaving metrics m in it's original state
+func (m Metrics) ComputeAffectedMetrics(hierarchy Hierarchy) Metrics {
+	metrics := m.DeepCopy()
+
+	for parent, children := range hierarchy {
+		for metric, v := range metrics {
+			if contains(metric, children) {
+				if _, known := metrics[parent]; known {
+					metrics.Add(parent, v)
+				} else {
+					metrics.Set(parent, v)
+				}
+			}
+		}
+	}
+	return metrics
 }
 
 // Add takes a provided key and value and adds them to the Metric 'm'
@@ -52,4 +74,13 @@ func (m Metrics) DeepCopy() Metrics {
 		clone[k] = v
 	}
 	return clone
+}
+
+func contains(key string, in []string) bool {
+	for _, i := range in {
+		if key == i {
+			return true
+		}
+	}
+	return false
 }
