@@ -16,10 +16,11 @@ func (h Hierarchy) DeepCopy() Hierarchy {
 	return clone
 }
 
-// ComputeAffectedMetrics takes the provided hierarchy structure, and uses it
-// to determine how the metrics, m, are affected.
-// Returns new Metrics, leaving metrics m in it's original state
-func (m Metrics) ComputeAffectedMetrics(hierarchy Hierarchy) Metrics {
+// AddHierarchyToMetrics takes the provided hierarchy structure, and uses it
+// to determine how the metrics, m, are affected, incrementing parent metrics
+// based on the value of the parents child/children metrics.
+// Returns new Metrics, leaving metrics m in it's original state.
+func (m Metrics) AddHierarchyToMetrics(hierarchy Hierarchy) Metrics {
 	metrics := m.DeepCopy()
 
 	for parent, children := range hierarchy {
