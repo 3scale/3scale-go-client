@@ -37,6 +37,30 @@ func (m Metrics) AddHierarchyToMetrics(hierarchy Hierarchy) Metrics {
 	return metrics
 }
 
+// SubtractHierarchyFromMetrics takes the provided hierarchy structure, and uses it
+// to determine how the metrics, m, are affected, decrementing parent metrics
+// based on the value of the parents child/children metrics.
+// Returns new Metrics, leaving metrics m in it's original state.
+func (m Metrics) SubtractHierarchyFromMetrics(hierarchy Hierarchy) Metrics {
+	metrics := m.DeepCopy()
+
+	for parent, children := range hierarchy {
+		for metric, v := range metrics {
+			if contains(metric, children) {
+				if value, known := metrics[parent]; known {
+					newValue := value - v
+					if newValue < 0 {
+						delete(metrics, parent)
+						continue
+					}
+					metrics.Set(parent, newValue)
+				}
+			}
+		}
+	}
+	return metrics
+}
+
 // Add takes a provided key and value and adds them to the Metric 'm'
 // If the metric already existed in 'm', then the value will be added (if positive) or subtracted (if negative) from the existing value.
 // If a subtraction leads to a negative value Add returns an error  and the change will be discarded.
