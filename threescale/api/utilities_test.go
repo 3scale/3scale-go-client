@@ -108,7 +108,7 @@ func TestMetrics_DeepCopy(t *testing.T) {
 	}
 }
 
-func TestMetrics_ComputeAffectedMetrics(t *testing.T) {
+func TestMetrics_AddHierarchyToMetrics(t *testing.T) {
 	inputs := []struct {
 		name      string
 		original  Metrics
@@ -149,7 +149,64 @@ func TestMetrics_ComputeAffectedMetrics(t *testing.T) {
 
 	for _, test := range inputs {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.original.ComputeAffectedMetrics(test.hierarchy)
+			got := test.original.AddHierarchyToMetrics(test.hierarchy)
+			if !reflect.DeepEqual(got, test.expect) {
+				t.Errorf("unexpected metrics computed, expected %v, but got %v", test.expect, got)
+			}
+		})
+	}
+}
+
+func TestMetrics_SubtractHierarchyFromMetrics(t *testing.T) {
+	inputs := []struct {
+		name      string
+		original  Metrics
+		hierarchy Hierarchy
+		expect    Metrics
+	}{
+		{
+			name:      "Test empty hierarchy returns a copy",
+			original:  Metrics{"hits": 10, "test": 5},
+			hierarchy: Hierarchy{},
+			expect:    Metrics{"hits": 10, "test": 5},
+		},
+		{
+			name:     "Test childless parent unaffected",
+			original: Metrics{"hits": 10, "orphan": 5},
+			hierarchy: Hierarchy{
+				"other": []string{"child_one", "child_two"},
+			},
+			expect: Metrics{"hits": 10, "orphan": 5},
+		},
+		{
+			name:     "Test child metrics reflected onto known parent",
+			original: Metrics{"hits": 10, "orphan": 5, "child_one": 3},
+			hierarchy: Hierarchy{
+				"hits": []string{"child_one", "child_two"},
+			},
+			expect: Metrics{"hits": 7, "orphan": 5, "child_one": 3},
+		},
+		{
+			name:     "Test child metrics reflected onto unknown parent",
+			original: Metrics{"child_one": 3},
+			hierarchy: Hierarchy{
+				"hits": []string{"child_one", "child_two"},
+			},
+			expect: Metrics{"child_one": 3},
+		},
+		{
+			name:     "Test child metrics remove parent if negative values occur",
+			original: Metrics{"hits": 4, "child_one": 5},
+			hierarchy: Hierarchy{
+				"hits": []string{"child_one", "child_two"},
+			},
+			expect: Metrics{"child_one": 5},
+		},
+	}
+
+	for _, test := range inputs {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.original.SubtractHierarchyFromMetrics(test.hierarchy)
 			if !reflect.DeepEqual(got, test.expect) {
 				t.Errorf("unexpected metrics computed, expected %v, but got %v", test.expect, got)
 			}

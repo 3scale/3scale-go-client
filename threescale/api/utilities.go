@@ -16,10 +16,11 @@ func (h Hierarchy) DeepCopy() Hierarchy {
 	return clone
 }
 
-// ComputeAffectedMetrics takes the provided hierarchy structure, and uses it
-// to determine how the metrics, m, are affected.
-// Returns new Metrics, leaving metrics m in it's original state
-func (m Metrics) ComputeAffectedMetrics(hierarchy Hierarchy) Metrics {
+// AddHierarchyToMetrics takes the provided hierarchy structure, and uses it
+// to determine how the metrics, m, are affected, incrementing parent metrics
+// based on the value of the parents child/children metrics.
+// Returns new Metrics, leaving metrics m in it's original state.
+func (m Metrics) AddHierarchyToMetrics(hierarchy Hierarchy) Metrics {
 	metrics := m.DeepCopy()
 
 	for parent, children := range hierarchy {
@@ -29,6 +30,30 @@ func (m Metrics) ComputeAffectedMetrics(hierarchy Hierarchy) Metrics {
 					metrics.Add(parent, v)
 				} else {
 					metrics.Set(parent, v)
+				}
+			}
+		}
+	}
+	return metrics
+}
+
+// SubtractHierarchyFromMetrics takes the provided hierarchy structure, and uses it
+// to determine how the metrics, m, are affected, decrementing parent metrics
+// based on the value of the parents child/children metrics.
+// Returns new Metrics, leaving metrics m in it's original state.
+func (m Metrics) SubtractHierarchyFromMetrics(hierarchy Hierarchy) Metrics {
+	metrics := m.DeepCopy()
+
+	for parent, children := range hierarchy {
+		for metric, v := range metrics {
+			if contains(metric, children) {
+				if value, known := metrics[parent]; known {
+					newValue := value - v
+					if newValue < 0 {
+						delete(metrics, parent)
+						continue
+					}
+					metrics.Set(parent, newValue)
 				}
 			}
 		}
