@@ -101,6 +101,29 @@ func (m Metrics) DeepCopy() Metrics {
 	return clone
 }
 
+// IsEqual compares two PeriodWindows. They are equal if the period is the same
+// and timestamps for start and end do not differ
+func (pw PeriodWindow) IsEqual(window PeriodWindow) bool {
+	if pw != window {
+		return false
+	}
+	return true
+}
+
+// IsSame does a comparison of two usage reports. They are considered the same only if their PeriodWindows are equal
+// and the max value for the limit has not changed. Current limit values are ignored.
+func (ur UsageReport) IsSame(usageReport UsageReport) bool {
+	if !ur.PeriodWindow.IsEqual(usageReport.PeriodWindow) {
+		return false
+	}
+
+	if ur.MaxValue != usageReport.MaxValue {
+		return false
+	}
+
+	return true
+}
+
 func contains(key string, in []string) bool {
 	for _, i := range in {
 		if key == i {
