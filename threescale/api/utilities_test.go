@@ -213,3 +213,131 @@ func TestMetrics_SubtractHierarchyFromMetrics(t *testing.T) {
 		})
 	}
 }
+
+func TestPeriodWindow_IsEqual(t *testing.T) {
+	base := PeriodWindow{
+		Period: Minute,
+		Start:  100,
+		End:    1000,
+	}
+
+	input := []struct {
+		name         string
+		compareTo    PeriodWindow
+		expectResult bool
+	}{
+		{
+			name: "Test false when period differs",
+			compareTo: PeriodWindow{
+				Period: Hour,
+				Start:  100,
+				End:    1000,
+			},
+			expectResult: false,
+		},
+		{
+			name: "Test false when start differs",
+			compareTo: PeriodWindow{
+				Period: Minute,
+				Start:  1000,
+				End:    1000,
+			},
+			expectResult: false,
+		},
+		{
+			name: "Test false when end differs",
+			compareTo: PeriodWindow{
+				Period: Minute,
+				Start:  100,
+				End:    100,
+			},
+			expectResult: false,
+		},
+		{
+			name: "Test true when equal",
+			compareTo: PeriodWindow{
+				Period: Minute,
+				Start:  100,
+				End:    1000,
+			},
+			expectResult: true,
+		},
+	}
+
+	for _, test := range input {
+		t.Run(test.name, func(t *testing.T) {
+			isEqual := base.IsEqual(test.compareTo)
+			if isEqual != test.expectResult {
+				t.Errorf("unexpected result during comparison, wanted %v but got %v",
+					test.expectResult, isEqual)
+			}
+		})
+	}
+}
+
+func TestUsageReport_IsSame(t *testing.T) {
+	basePeriodWindow := PeriodWindow{
+		Period: Minute,
+		Start:  100,
+		End:    1000,
+	}
+
+	baseUsageReport := UsageReport{
+		PeriodWindow: basePeriodWindow,
+		MaxValue:     100,
+		CurrentValue: 10,
+	}
+
+	input := []struct {
+		name         string
+		compareTo    UsageReport
+		expectResult bool
+	}{
+		{
+			name: "Test false when period window differs",
+			compareTo: UsageReport{
+				PeriodWindow: PeriodWindow{},
+				MaxValue:     100,
+				CurrentValue: 10,
+			},
+			expectResult: false,
+		},
+		{
+			name: "Test false when max differs",
+			compareTo: UsageReport{
+				PeriodWindow: basePeriodWindow,
+				MaxValue:     10,
+				CurrentValue: 10,
+			},
+			expectResult: false,
+		},
+		{
+			name: "Test true even when CurrentValue differs",
+			compareTo: UsageReport{
+				PeriodWindow: basePeriodWindow,
+				MaxValue:     100,
+				CurrentValue: 5,
+			},
+			expectResult: true,
+		},
+		{
+			name: "Test true when same",
+			compareTo: UsageReport{
+				PeriodWindow: basePeriodWindow,
+				MaxValue:     100,
+				CurrentValue: 10,
+			},
+			expectResult: true,
+		},
+	}
+
+	for _, test := range input {
+		t.Run(test.name, func(t *testing.T) {
+			isSame := baseUsageReport.IsSame(test.compareTo)
+			if isSame != test.expectResult {
+				t.Errorf("unexpected result during comparison, wanted %v but got %v",
+					test.expectResult, isSame)
+			}
+		})
+	}
+}
