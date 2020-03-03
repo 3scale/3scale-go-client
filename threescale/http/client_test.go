@@ -191,23 +191,36 @@ func TestClient_Authorize(t *testing.T) {
 				Authorized: true,
 				AuthorizeExtensions: threescale.AuthorizeExtensions{
 					UsageReports: api.UsageReports{
-						"hits": api.UsageReport{
-							PeriodWindow: api.PeriodWindow{
-								Period: api.Minute,
-								Start:  1550845920,
-								End:    1550845980,
+						"hits": []api.UsageReport{
+							{
+								PeriodWindow: api.PeriodWindow{
+									Period: api.Minute,
+									Start:  1550845920,
+									End:    1550845980,
+								},
+								MaxValue:     4,
+								CurrentValue: 1,
 							},
-							MaxValue:     4,
-							CurrentValue: 1,
+							{
+								PeriodWindow: api.PeriodWindow{
+									Period: api.Hour,
+									Start:  1550844000,
+									End:    1550847599,
+								},
+								MaxValue:     40,
+								CurrentValue: 10,
+							},
 						},
-						"test_metric": api.UsageReport{
-							PeriodWindow: api.PeriodWindow{
-								Period: api.Week,
-								Start:  1550448000,
-								End:    1551052800,
+						"test_metric": []api.UsageReport{
+							{
+								PeriodWindow: api.PeriodWindow{
+									Period: api.Week,
+									Start:  1550448000,
+									End:    1551052800,
+								},
+								MaxValue:     6,
+								CurrentValue: 0,
 							},
-							MaxValue:     6,
-							CurrentValue: 0,
 						},
 					},
 				},
@@ -894,6 +907,12 @@ func getUsageReportXML(t *testing.T) string {
          <period_end>2019-02-22 14:33:00 +0000</period_end>
          <max_value>4</max_value>
          <current_value>1</current_value>
+      </usage_report>
+      <usage_report metric="hits" period="hour">
+         <period_start>2019-02-22 14:00:00 +0000</period_start>
+         <period_end>2019-02-22 14:59:59 +0000</period_end>
+         <max_value>40</max_value>
+         <current_value>10</current_value>
       </usage_report>
       <usage_report metric="test_metric" period="week">
          <period_start>2019-02-18 00:00:00 +0000</period_start>
