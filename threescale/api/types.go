@@ -122,5 +122,5 @@ type UsageReport struct {
 	CurrentValue int
 }
 
-// UsageReports defines a map of metric names to 'UsageReport'
-type UsageReports map[string]UsageReport
+// UsageReports defines a map of metric names to a list of 'UsageReport'
+type UsageReports map[string][]UsageReport
