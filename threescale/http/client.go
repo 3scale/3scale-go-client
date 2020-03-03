@@ -192,7 +192,7 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 	}
 
 	if reportLen := len(xmlResponse.UsageReports.Reports); reportLen > 0 {
-		response.UsageReports = c.convertXmlUsageReports(xmlResponse.UsageReports.Reports, reportLen)
+		response.UsageReports = c.convertXmlUsageReports(xmlResponse.UsageReports.Reports)
 	}
 
 	if extensions != nil {
@@ -254,12 +254,13 @@ func (c *Client) handleAuthExtensions(xmlResp internal.AuthResponseXML, resp *ht
 	return annotatedResp
 }
 
-func (c *Client) convertXmlUsageReports(xmlReports []internal.UsageReportXML, mapLen int) api.UsageReports {
-	usageReports := make(api.UsageReports, mapLen)
+func (c *Client) convertXmlUsageReports(xmlReports []internal.UsageReportXML) api.UsageReports {
+	usageReports := make(api.UsageReports)
 	for _, report := range xmlReports {
 		if converted, err := convertXmlToUsageReport(report); err == nil {
 			//nothing we can do here if we hit an error besides continue
-			usageReports[report.Metric] = converted
+			currentReports := usageReports[report.Metric]
+			usageReports[report.Metric] = append(currentReports, converted)
 		}
 	}
 	return usageReports
