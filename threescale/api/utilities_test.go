@@ -341,3 +341,109 @@ func TestUsageReport_IsSame(t *testing.T) {
 		})
 	}
 }
+
+func TestUsageReports_OrderByAscendingGranularity(t *testing.T) {
+	input := UsageReports{
+		"hits_one": {
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Day,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Eternity,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Month,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Week,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Minute,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Year,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Hour,
+				},
+			},
+		},
+	}
+
+	input.OrderByAscendingGranularity()
+	sorted := input["hits_one"]
+
+	var expect = []string{"minute", "hour", "day", "week", "month", "year", "eternity"}
+
+	for i, value := range sorted {
+		if value.PeriodWindow.Period.String() != expect[i] {
+			t.Errorf("Expected %s but got %s", expect[i], value.PeriodWindow.Period.String())
+		}
+	}
+}
+
+func TestUsageReports_OrderByDescendingGranularity(t *testing.T) {
+	input := UsageReports{
+		"hits_one": {
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Day,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Eternity,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Month,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Week,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Minute,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Year,
+				},
+			},
+			{
+				PeriodWindow: PeriodWindow{
+					Period: Hour,
+				},
+			},
+		},
+	}
+
+	input.OrderByDescendingGranularity()
+	sorted := input["hits_one"]
+
+	var expect = []string{"eternity", "year", "month", "week", "day", "hour", "minute"}
+
+	for i, value := range sorted {
+		if value.PeriodWindow.Period.String() != expect[i] {
+			t.Errorf("Expected %s but got %s", expect[i], value.PeriodWindow.Period.String())
+		}
+	}
+}
