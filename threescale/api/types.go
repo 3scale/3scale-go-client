@@ -30,18 +30,18 @@ const (
 )
 
 // Period wraps the known rate limiting periods as defined in 3scale
-type Period string
+type Period int
 
 // Predefined, known LimitPeriods which can be used in 3scale rate limiting functionality
 // These values represent time durations.
 const (
-	Minute   Period = "minute"
-	Hour     Period = "hour"
-	Day      Period = "day"
-	Week     Period = "week"
-	Month    Period = "month"
-	Year     Period = "year"
-	Eternity Period = "eternity"
+	Minute Period = iota
+	Hour
+	Day
+	Week
+	Month
+	Year
+	Eternity
 )
 
 // AuthType maps to a known client authentication pattern

@@ -101,6 +101,11 @@ func (m Metrics) DeepCopy() Metrics {
 	return clone
 }
 
+// String returns a string representation of the Period
+func (p Period) String() string {
+	return [...]string{"minute", "hour", "day", "week", "month", "year", "eternity"}[p]
+}
+
 // IsEqual compares two PeriodWindows. They are equal if the period is the same
 // and timestamps for start and end do not differ
 func (pw PeriodWindow) IsEqual(window PeriodWindow) bool {
