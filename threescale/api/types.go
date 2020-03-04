@@ -40,6 +40,7 @@ const (
 	Day      Period = "day"
 	Week     Period = "week"
 	Month    Period = "month"
+	Year     Period = "year"
 	Eternity Period = "eternity"
 )
 
