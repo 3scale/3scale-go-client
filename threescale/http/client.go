@@ -342,6 +342,16 @@ func contains(key string, in []string) bool {
 	return false
 }
 
+var granularityMap = map[string]api.Period{
+	"minute":   api.Minute,
+	"hour":     api.Hour,
+	"day":      api.Day,
+	"week":     api.Week,
+	"month":    api.Month,
+	"year":     api.Year,
+	"eternity": api.Eternity,
+}
+
 // convert an xml decoded response into a user friendly UsageReport
 func convertXmlToUsageReport(ur internal.UsageReportXML) (api.UsageReport, error) {
 	var err error
@@ -351,7 +361,7 @@ func convertXmlToUsageReport(ur internal.UsageReportXML) (api.UsageReport, error
 	}
 
 	pw := api.PeriodWindow{
-		Period: ur.Period,
+		Period: granularityMap[ur.Period],
 	}
 
 	parseTime := func(timestamp string) (int64, error) {

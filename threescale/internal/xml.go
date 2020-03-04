@@ -2,8 +2,6 @@ package internal
 
 import (
 	"encoding/xml"
-
-	"github.com/3scale/3scale-go-client/threescale/api"
 )
 
 // AuthResponseXML formatted response from backend API for Authorize and AuthRep
@@ -28,12 +26,12 @@ type HierarchyXML struct {
 
 // UsageReportXML captures the XML response for rate limiting details
 type UsageReportXML struct {
-	Metric       string     `xml:"metric,attr"`
-	Period       api.Period `xml:"period,attr"`
-	PeriodStart  string     `xml:"period_start"`
-	PeriodEnd    string     `xml:"period_end"`
-	MaxValue     int        `xml:"max_value"`
-	CurrentValue int        `xml:"current_value"`
+	Metric       string `xml:"metric,attr"`
+	Period       string `xml:"period,attr"`
+	PeriodStart  string `xml:"period_start"`
+	PeriodEnd    string `xml:"period_end"`
+	MaxValue     int    `xml:"max_value"`
+	CurrentValue int    `xml:"current_value"`
 }
 
 // ReportErrorXML captures the XML response from Report endpoint when not status 202
