@@ -616,13 +616,15 @@ func TestClient_Report(t *testing.T) {
 					Params: api.Params{
 						UserKey: "test",
 					},
-					Metrics: api.Metrics{"hits": 1},
+					Metrics:   api.Metrics{"hits": 1},
+					Timestamp: 500,
 				},
 				{
 					Params: api.Params{
 						UserKey: "test-2",
 					},
-					Metrics: api.Metrics{"hits": 1, "other": 2},
+					Metrics:   api.Metrics{"hits": 1, "other": 2},
+					Timestamp: 1000,
 				},
 			},
 			expectResponse: &threescale.ReportResult{
@@ -630,8 +632,8 @@ func TestClient_Report(t *testing.T) {
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				// we know that Encode will sort by keys so we can predict this output
-				// decoded to service_id=test-id&service_token=st&transactions[0][usage][hits]=1&transactions[0][user_key]=test&transactions[1][usage][hits]=1&transactions[1][usage][other]=2&transactions[1][user_key]=test-2
-				expect := `service_id=test-id&service_token=st&transactions%5B0%5D%5Busage%5D%5Bhits%5D=1&transactions%5B0%5D%5Buser_key%5D=test&transactions%5B1%5D%5Busage%5D%5Bhits%5D=1&transactions%5B1%5D%5Busage%5D%5Bother%5D=2&transactions%5B1%5D%5Buser_key%5D=test-2`
+				// decoded to service_id=test-id&service_token=st&transactions[0][timestamp]=500&transactions[0][usage][hits]=1&transactions[0][user_key]=test&transactions[1][timestamp]=1000&transactions[1][usage][hits]=1&transactions[1][usage][other]=2&transactions[1][user_key]=test-2
+				expect := `service_id=test-id&service_token=st&transactions%5B0%5D%5Btimestamp%5D=500&transactions%5B0%5D%5Busage%5D%5Bhits%5D=1&transactions%5B0%5D%5Buser_key%5D=test&transactions%5B1%5D%5Btimestamp%5D=1000&transactions%5B1%5D%5Busage%5D%5Bhits%5D=1&transactions%5B1%5D%5Busage%5D%5Bother%5D=2&transactions%5B1%5D%5Buser_key%5D=test-2`
 				equals(t, expect, req.URL.RawQuery)
 
 				return &http.Response{
