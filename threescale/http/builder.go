@@ -135,6 +135,10 @@ func (rb requestBuilder) transactionToValues(index int, t api.Transaction) url.V
 	for k, v := range t.Metrics {
 		values.Add(fmt.Sprintf("transactions[%d][usage][%s]", index, k), strconv.Itoa(v))
 	}
+
+	if t.Timestamp != 0 {
+		values.Add(fmt.Sprintf("transactions[%d][timestamp]", index), strconv.FormatInt(t.Timestamp, 10))
+	}
 	return values
 }
 
