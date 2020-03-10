@@ -111,9 +111,11 @@ type Service string
 // Transaction holds the params and optional additions that will be sent
 // to 3scale as query parameters or headers.
 type Transaction struct {
-	Metrics   Metrics
-	Params    Params
-	Timestamp string
+	Metrics Metrics
+	Params  Params
+	// Timestamp is a unix timestamp.
+	// Timestamp will only be taken into account when calling the Report API
+	Timestamp int64
 }
 
 // UsageReport for rate limiting information gathered from using extensions
