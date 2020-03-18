@@ -116,6 +116,55 @@ func (pw PeriodWindow) IsEqual(window PeriodWindow) bool {
 	return true
 }
 
+func (ur UsageReport) IsForEternity() bool {
+	if ur.PeriodWindow.Period != Eternity {
+		return false
+	}
+	return true
+}
+
+func (ur UsageReport) IsForYear() bool {
+	if ur.PeriodWindow.Period != Year {
+		return false
+	}
+	return true
+}
+
+func (ur UsageReport) IsForMonth() bool {
+	if ur.PeriodWindow.Period != Month {
+		return false
+	}
+	return true
+}
+
+func (ur UsageReport) IsForWeek() bool {
+	if ur.PeriodWindow.Period != Week {
+		return false
+	}
+	return true
+}
+
+func (ur UsageReport) IsForDay() bool {
+	if ur.PeriodWindow.Period != Day {
+		return false
+	}
+	return true
+}
+
+func (ur UsageReport) IsForHour() bool {
+	if ur.PeriodWindow.Period != Hour {
+		return false
+	}
+	return true
+}
+
+func (ur UsageReport) IsForMinute() bool {
+	if ur.PeriodWindow.Period != Minute {
+		return false
+	}
+	return true
+}
+
 // IsSame does a comparison of two usage reports. They are considered the same only if their PeriodWindows are equal
 // and the max value for the limit has not changed. Current limit values are ignored.
 func (ur UsageReport) IsSame(usageReport UsageReport) bool {
