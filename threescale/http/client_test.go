@@ -1033,6 +1033,38 @@ func compareUnorderedStringLists(one []string, other []string) bool {
 	return true
 }
 
+func TestCodeToStatusCode(t *testing.T) {
+	tests := []struct{
+		input string
+		expect int
+	}{
+		{
+			input: "access_token_storage_error",
+			expect: http.StatusBadRequest,
+		},
+		{
+			input: "provider_key_invalid",
+			expect: http.StatusForbidden,
+		},
+		{
+			input: "application_token_invalid",
+			expect: http.StatusNotFound,
+		},
+		{
+			input: "oauth_not_enabled",
+			expect: http.StatusConflict,
+		},
+		{
+			input: "referrer_filter_invalid",
+			expect: http.StatusUnprocessableEntity,
+		},
+	}
+
+	for _, test := range tests {
+		equals(t, test.expect, CodeToStatusCode(test.input))
+	}
+}
+
 // ******
 
 // *****
