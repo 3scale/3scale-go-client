@@ -36,7 +36,9 @@ type AuthorizeResult struct {
 	// Authorized states if the call has been authorized by 3scale
 	Authorized bool
 	// ErrorCode as returned by backend - see https://github.com/3scale/apisonator/blob/v2.96.2/docs/rfcs/error_responses.md
-	ErrorCode string
+	ErrorCode   string
+	// RawResponse may be set by the underlying client implementation
+	RawResponse interface{}
 	AuthorizeExtensions
 }
 
@@ -46,6 +48,8 @@ type ReportResult struct {
 	Accepted bool
 	// ErrorCode as returned by backend - see https://github.com/3scale/apisonator/blob/v2.96.2/docs/rfcs/error_responses.md
 	ErrorCode string
+	// RawResponse may be set by the underlying client implementation
+	RawResponse interface{}
 }
 
 // Request encapsulates the requirements for a successful api call to 3scale backend
