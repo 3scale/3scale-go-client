@@ -333,7 +333,6 @@ func TestClient_Authorize(t *testing.T) {
 				return
 			}
 
-			equals(t, input.expectResponse, resp)
 			equals(t, input.expectResponse.RateLimits, resp.RateLimits)
 			equals(t, input.expectResponse.Hierarchy, resp.Hierarchy)
 			equals(t, input.expectResponse.UsageReports, resp.UsageReports)
@@ -428,7 +427,10 @@ func TestClient_AuthorizeWithOptions(t *testing.T) {
 				<-done
 			}
 
-			equals(t, input.expectResponse, resp)
+			equals(t, input.expectResponse.RateLimits, resp.RateLimits)
+			equals(t, input.expectResponse.Hierarchy, resp.Hierarchy)
+			equals(t, input.expectResponse.UsageReports, resp.UsageReports)
+			equals(t, input.expectResponse.Authorized, resp.Authorized)
 		})
 	}
 }
@@ -678,7 +680,7 @@ func TestClient_Report(t *testing.T) {
 				}
 				return
 			}
-			equals(t, input.expectResponse, resp)
+			equals(t, input.expectResponse.ErrorCode, resp.ErrorCode)
 			equals(t, input.expectResponse.Accepted, resp.Accepted)
 		})
 	}
@@ -780,7 +782,8 @@ func TestClient_ReportWithOptions(t *testing.T) {
 				<-done
 			}
 
-			equals(t, input.expectResponse, resp)
+			equals(t, input.expectResponse.ErrorCode, resp.ErrorCode)
+			equals(t, input.expectResponse.Accepted, resp.Accepted)
 		})
 	}
 }

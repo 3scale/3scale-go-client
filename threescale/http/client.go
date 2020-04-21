@@ -189,6 +189,7 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 		Authorized:          xmlResponse.Authorized,
 		ErrorCode:           errCode,
 		AuthorizeExtensions: threescale.AuthorizeExtensions{},
+		RawResponse: resp,
 	}
 
 	if reportLen := len(xmlResponse.UsageReports.Reports); reportLen > 0 {
@@ -232,11 +233,13 @@ func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions,
 		return &threescale.ReportResult{
 			Accepted:  false,
 			ErrorCode: xmlResponse.Code,
+			RawResponse: resp,
 		}, nil
 	}
 
 	return &threescale.ReportResult{
 		Accepted: true,
+		RawResponse: resp,
 	}, nil
 }
 
