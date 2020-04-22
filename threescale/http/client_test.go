@@ -189,40 +189,40 @@ func TestClient_Authorize(t *testing.T) {
 			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
 			expectResponse: &threescale.AuthorizeResult{
 				Authorized: true,
-				AuthorizeExtensions: threescale.AuthorizeExtensions{
-					UsageReports: api.UsageReports{
-						"hits": []api.UsageReport{
-							{
-								PeriodWindow: api.PeriodWindow{
-									Period: api.Minute,
-									Start:  1550845920,
-									End:    1550845980,
-								},
-								MaxValue:     4,
-								CurrentValue: 1,
+				UsageReports: api.UsageReports{
+					"hits": []api.UsageReport{
+						{
+							PeriodWindow: api.PeriodWindow{
+								Period: api.Minute,
+								Start:  1550845920,
+								End:    1550845980,
 							},
-							{
-								PeriodWindow: api.PeriodWindow{
-									Period: api.Hour,
-									Start:  1550844000,
-									End:    1550847599,
-								},
-								MaxValue:     40,
-								CurrentValue: 10,
-							},
+							MaxValue:     4,
+							CurrentValue: 1,
 						},
-						"test_metric": []api.UsageReport{
-							{
-								PeriodWindow: api.PeriodWindow{
-									Period: api.Week,
-									Start:  1550448000,
-									End:    1551052800,
-								},
-								MaxValue:     6,
-								CurrentValue: 0,
+						{
+							PeriodWindow: api.PeriodWindow{
+								Period: api.Hour,
+								Start:  1550844000,
+								End:    1550847599,
 							},
+							MaxValue:     40,
+							CurrentValue: 10,
 						},
 					},
+					"test_metric": []api.UsageReport{
+						{
+							PeriodWindow: api.PeriodWindow{
+								Period: api.Week,
+								Start:  1550448000,
+								End:    1551052800,
+							},
+							MaxValue:     6,
+							CurrentValue: 0,
+						},
+					},
+				},
+				AuthorizeExtensions: threescale.AuthorizeExtensions{
 				},
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
