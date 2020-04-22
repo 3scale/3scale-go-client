@@ -27,14 +27,14 @@ type AuthorizeExtensions struct {
 	Hierarchy api.Hierarchy
 	// Result from rate limiting extension 'limit_headers' - will be nil if not leveraged or unsupported
 	RateLimits *api.RateLimits
-	// List of usage reports - list will be empty if no limits set
-	UsageReports api.UsageReports
 }
 
 // AuthorizeResult is returned by a client for Auth and AuthRep requests
 type AuthorizeResult struct {
 	// Authorized states if the call has been authorized by 3scale
 	Authorized bool
+	// List of usage reports - list will be empty if no limits set
+	UsageReports api.UsageReports
 	// ErrorCode as returned by backend - see https://github.com/3scale/apisonator/blob/v2.96.2/docs/rfcs/error_responses.md
 	ErrorCode   string
 	// RawResponse may be set by the underlying client implementation
