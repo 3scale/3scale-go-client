@@ -6,4 +6,4 @@ test: # Run unit tests
 
 .PHONY: test_coverage
 test_coverage: # Run unit tests with code coverage
-	go test $(PACKAGE_CLIENT)/... -test.coverprofile="coverage.txt"
+	go test $(PACKAGE_CLIENT)/... -test.coverprofile="c.out"

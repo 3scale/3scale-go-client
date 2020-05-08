@@ -222,8 +222,7 @@ func TestClient_Authorize(t *testing.T) {
 						},
 					},
 				},
-				AuthorizeExtensions: threescale.AuthorizeExtensions{
-				},
+				AuthorizeExtensions: threescale.AuthorizeExtensions{},
 			},
 			injectClient: NewTestClient(func(req *http.Request) *http.Response {
 				equals(t, req.URL.Path, authzEndpoint)
@@ -1037,28 +1036,28 @@ func compareUnorderedStringLists(one []string, other []string) bool {
 }
 
 func TestCodeToStatusCode(t *testing.T) {
-	tests := []struct{
-		input string
+	tests := []struct {
+		input  string
 		expect int
 	}{
 		{
-			input: "access_token_storage_error",
+			input:  "access_token_storage_error",
 			expect: http.StatusBadRequest,
 		},
 		{
-			input: "provider_key_invalid",
+			input:  "provider_key_invalid",
 			expect: http.StatusForbidden,
 		},
 		{
-			input: "application_token_invalid",
+			input:  "application_token_invalid",
 			expect: http.StatusNotFound,
 		},
 		{
-			input: "oauth_not_enabled",
+			input:  "oauth_not_enabled",
 			expect: http.StatusConflict,
 		},
 		{
-			input: "referrer_filter_invalid",
+			input:  "referrer_filter_invalid",
 			expect: http.StatusUnprocessableEntity,
 		},
 	}
