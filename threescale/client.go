@@ -37,6 +37,8 @@ type AuthorizeResult struct {
 	UsageReports api.UsageReports
 	// ErrorCode as returned by backend - see https://github.com/3scale/apisonator/blob/v2.96.2/docs/rfcs/error_responses.md
 	ErrorCode   string
+	// RejectionReason - human readable string explaining why authorization has not been granted
+	RejectionReason string
 	// RawResponse may be set by the underlying client implementation
 	RawResponse interface{}
 	AuthorizeExtensions

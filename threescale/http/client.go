@@ -178,18 +178,12 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 		return nil, err
 	}
 
-	// because its non-deterministic where the error message should be retrieved from, we need to do this.
-	// for example when rate limits are exceeded it is set in 'Reason' but for most other errors it is set in 'Code'
-	var errCode = xmlResponse.Code
-	if errCode == "" {
-		errCode = xmlResponse.Reason
-	}
-
 	response := &threescale.AuthorizeResult{
 		Authorized:          xmlResponse.Authorized,
-		ErrorCode:           errCode,
+		ErrorCode:           xmlResponse.Code,
+		RejectionReason:     xmlResponse.Reason,
 		AuthorizeExtensions: threescale.AuthorizeExtensions{},
-		RawResponse: resp,
+		RawResponse:         resp,
 	}
 
 	if reportLen := len(xmlResponse.UsageReports.Reports); reportLen > 0 {
@@ -231,14 +225,14 @@ func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions,
 			return nil, err
 		}
 		return &threescale.ReportResult{
-			Accepted:  false,
-			ErrorCode: xmlResponse.Code,
+			Accepted:    false,
+			ErrorCode:   xmlResponse.Code,
 			RawResponse: resp,
 		}, nil
 	}
 
 	return &threescale.ReportResult{
-		Accepted: true,
+		Accepted:    true,
 		RawResponse: resp,
 	}, nil
 }
@@ -313,33 +307,33 @@ func (c *Client) wrapError(err error) error {
 // See https://github.com/3scale/apisonator/blob/v2.96.2/docs/rfcs/error_responses.md
 func CodeToStatusCode(errorCode string) int {
 	transform := map[string]int{
-		"access_token_storage_error": http.StatusBadRequest,
-		"not_valid_data":http.StatusBadRequest,
-		"bad_request": http.StatusBadRequest,
-		"access_token_already_exists":http.StatusBadRequest,
-		"content_type_invalid":http.StatusBadRequest,
-		"provider_key_invalid": http.StatusForbidden,
-		"user_requires_registration": http.StatusForbidden,
-		"user_key_invalid": http.StatusForbidden,
-		"authentication_error": http.StatusForbidden,
+		"access_token_storage_error":             http.StatusBadRequest,
+		"not_valid_data":                         http.StatusBadRequest,
+		"bad_request":                            http.StatusBadRequest,
+		"access_token_already_exists":            http.StatusBadRequest,
+		"content_type_invalid":                   http.StatusBadRequest,
+		"provider_key_invalid":                   http.StatusForbidden,
+		"user_requires_registration":             http.StatusForbidden,
+		"user_key_invalid":                       http.StatusForbidden,
+		"authentication_error":                   http.StatusForbidden,
 		"provider_key_or_service_token_required": http.StatusForbidden,
-		"service_token_invalid": http.StatusForbidden,
-		"application_not_found":http.StatusNotFound,
-		"application_token_invalid":http.StatusNotFound,
-		"service_id_invalid":http.StatusNotFound,
-		"metric_invalid":http.StatusNotFound,
-		"limits_exceeded":http.StatusConflict,
-		"oauth_not_enabled":http.StatusConflict,
-		"redirect_uri_invalid":http.StatusConflict,
-		"redirect_url_invalid":http.StatusConflict,
-		"application_not_active":http.StatusConflict,
-		"application_key_invalid":http.StatusConflict,
-		"referrer_not_allowed":http.StatusConflict,
-		"application_has_inconsistent_data":http.StatusUnprocessableEntity,
-		"referrer_filter_invalid":http.StatusUnprocessableEntity,
-		"required_params_missing":http.StatusUnprocessableEntity,
-		"usage_value_invalid":http.StatusUnprocessableEntity,
-		"service_id_missing":http.StatusUnprocessableEntity,
+		"service_token_invalid":                  http.StatusForbidden,
+		"application_not_found":                  http.StatusNotFound,
+		"application_token_invalid":              http.StatusNotFound,
+		"service_id_invalid":                     http.StatusNotFound,
+		"metric_invalid":                         http.StatusNotFound,
+		"limits_exceeded":                        http.StatusConflict,
+		"oauth_not_enabled":                      http.StatusConflict,
+		"redirect_uri_invalid":                   http.StatusConflict,
+		"redirect_url_invalid":                   http.StatusConflict,
+		"application_not_active":                 http.StatusConflict,
+		"application_key_invalid":                http.StatusConflict,
+		"referrer_not_allowed":                   http.StatusConflict,
+		"application_has_inconsistent_data":      http.StatusUnprocessableEntity,
+		"referrer_filter_invalid":                http.StatusUnprocessableEntity,
+		"required_params_missing":                http.StatusUnprocessableEntity,
+		"usage_value_invalid":                    http.StatusUnprocessableEntity,
+		"service_id_missing":                     http.StatusUnprocessableEntity,
 	}[errorCode]
 	return transform
 }
