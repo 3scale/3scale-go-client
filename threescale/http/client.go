@@ -35,6 +35,12 @@ const (
 	limitRemainingHeaderKey = "3scale-limit-remaining"
 	// limitResetHeaderKey has a value set to an integer stating the amount of seconds left for the current limiting period to elapse
 	limitResetHeaderKey = "3scale-limit-reset"
+	// RejectionReasonHeader - This is used by authorization endpoints to provide a header that provides an error code
+	// describing the different reasons an authorization can be denied.
+	RejectionReasonHeaderExtension = "rejection_reason_header"
+	// NoBodyExtension instructs backend to avoid generating response bodies for certain endpoints.
+	// In particular, this is useful to avoid generating large response in the authorization endpoints
+	NoBodyExtension = "no_body"
 
 	httpReqErrText = "error building http transaction"
 
@@ -174,6 +180,10 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 		}
 	}()
 
+	if val, ok := extensions[NoBodyExtension]; ok && val == "1" {
+		return c.handleNoBodyExtensionForAuth(resp, extensions), nil
+	}
+
 	if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
 		return nil, err
 	}
@@ -248,6 +258,10 @@ func (c *Client) handleAuthExtensions(xmlResp internal.AuthResponseXML, resp *ht
 		annotatedResp.RateLimits = c.handleRateLimitExtensions(resp)
 	}
 
+	if code := c.parseRejectionReasonHeader(resp); code != "" {
+		annotatedResp.ErrorCode = code
+	}
+
 	return annotatedResp
 }
 
@@ -297,6 +311,37 @@ func (c *Client) handleRateLimitExtensions(resp *http.Response) *api.RateLimits 
 		}
 	}
 	return rl
+}
+
+func (c *Client) handleNoBodyExtensionForAuth(resp *http.Response, extensions api.Extensions) *threescale.AuthorizeResult {
+	var rl *api.RateLimits
+	if _, ok := extensions[api.LimitExtension]; ok {
+		rl = c.handleRateLimitExtensions(resp)
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		return &threescale.AuthorizeResult{
+			Authorized:  true,
+			RawResponse: resp,
+			AuthorizeExtensions: threescale.AuthorizeExtensions{
+				RateLimits: rl,
+			},
+		}
+	}
+
+	return &threescale.AuthorizeResult{
+		Authorized:  false,
+		ErrorCode:   c.parseRejectionReasonHeader(resp),
+		RawResponse: resp,
+		AuthorizeExtensions: threescale.AuthorizeExtensions{
+			RateLimits: rl,
+		},
+	}
+
+}
+
+func (c *Client) parseRejectionReasonHeader(resp *http.Response) string {
+	return resp.Header.Get("3scale-Rejection-Reason")
 }
 
 func (c *Client) wrapError(err error) error {

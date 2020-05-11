@@ -296,6 +296,84 @@ func TestClient_Authorize(t *testing.T) {
 				}
 			}),
 		},
+		{
+			name:        "Test authorization extensions - no_body",
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
+			extensions:  api.Extensions{NoBodyExtension: "1"},
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: false,
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				if strings.Contains(req.URL.RawQuery, "usage") {
+					t.Error("unexpected usage has been generated for empty transaction")
+				}
+				expectValSet := req.Header.Get("3scale-Options")
+				if expectValSet != "no_body=1" {
+					t.Error("expected no body feature to have been enabled via header")
+				}
+				equals(t, req.URL.Path, authzEndpoint)
+				return &http.Response{
+					StatusCode: 404,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Header:     http.Header{},
+				}
+			}),
+		},
+		{
+			name:        "Test authorization extensions - rejection header",
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
+			extensions:  api.Extensions{NoBodyExtension: "1", RejectionReasonHeaderExtension: "1"},
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: false,
+				ErrorCode:  "someValue",
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				if strings.Contains(req.URL.RawQuery, "usage") {
+					t.Error("unexpected usage has been generated for empty transaction")
+				}
+				expectValSet := req.Header.Get("3scale-Options")
+				if expectValSet != "no_body=1&rejection_reason_header=1" {
+					t.Error("expected rejection_reason_header feature to have been enabled via header")
+				}
+				equals(t, req.URL.Path, authzEndpoint)
+				return &http.Response{
+					StatusCode: 404,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Header: http.Header{
+						"3scale-Rejection-Reason": []string{"someValue"},
+					},
+				}
+			}),
+		},
+		{
+			name:        "Test authorization extensions - rejection header 2",
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
+			extensions:  api.Extensions{RejectionReasonHeaderExtension: "1"},
+			expectResponse: &threescale.AuthorizeResult{
+				Authorized: false,
+				ErrorCode:  "someValue",
+			},
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				if strings.Contains(req.URL.RawQuery, "usage") {
+					t.Error("unexpected usage has been generated for empty transaction")
+				}
+				expectValSet := req.Header.Get("3scale-Options")
+				if expectValSet != "rejection_reason_header=1" {
+					t.Error("expected rejection_reason_header feature to have been enabled via header")
+				}
+				equals(t, req.URL.Path, authzEndpoint)
+				return &http.Response{
+					StatusCode: 404,
+					Body:       ioutil.NopCloser(bytes.NewBufferString(fake.GetInvalidMetricResp())),
+					Header: http.Header{
+						"3scale-Rejection-Reason": []string{"someValue"},
+					},
+				}
+			}),
+		},
 	}
 
 	for _, input := range inputs {
