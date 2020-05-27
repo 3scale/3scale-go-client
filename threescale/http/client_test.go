@@ -333,10 +333,11 @@ func TestClient_Authorize(t *testing.T) {
 				if strings.Contains(req.URL.RawQuery, "usage") {
 					t.Error("unexpected usage has been generated for empty transaction")
 				}
-				expectValSet := req.Header.Get("3scale-Options")
-				if expectValSet != "no_body=1&rejection_reason_header=1" {
+
+				if !strings.Contains(req.Header.Get("3scale-Options"), "rejection_reason_header=1") {
 					t.Error("expected rejection_reason_header feature to have been enabled via header")
 				}
+
 				equals(t, req.URL.Path, authzEndpoint)
 				return &http.Response{
 					StatusCode: 404,
