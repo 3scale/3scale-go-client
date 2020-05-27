@@ -333,10 +333,11 @@ func TestClient_Authorize(t *testing.T) {
 				if strings.Contains(req.URL.RawQuery, "usage") {
 					t.Error("unexpected usage has been generated for empty transaction")
 				}
-				expectValSet := req.Header.Get("3scale-Options")
-				if expectValSet != "no_body=1&rejection_reason_header=1" {
+
+				if !strings.Contains(req.Header.Get("3scale-Options"), "rejection_reason_header=1") {
 					t.Error("expected rejection_reason_header feature to have been enabled via header")
 				}
+
 				equals(t, req.URL.Path, authzEndpoint)
 				return &http.Response{
 					StatusCode: 404,
@@ -371,6 +372,20 @@ func TestClient_Authorize(t *testing.T) {
 					Header: http.Header{
 						"3scale-Rejection-Reason": []string{"someValue"},
 					},
+				}
+			}),
+		},
+		{
+			name:        "Test 500+ status codes return an error",
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
+			expectErr:   true,
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				equals(t, req.URL.Path, authzEndpoint)
+				return &http.Response{
+					StatusCode: http.StatusServiceUnavailable,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Header:     make(http.Header),
 				}
 			}),
 		},
@@ -718,6 +733,19 @@ func TestClient_Report(t *testing.T) {
 				return &http.Response{
 					StatusCode: 202,
 					Body:       ioutil.NopCloser(bytes.NewBufferString("")),
+					Header:     make(http.Header),
+				}
+			}),
+		},
+		{
+			name:      "Test 500+ status codes return an error",
+			auth:      api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			expectErr: true,
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				equals(t, req.URL.Path, reportEndpoint)
+				return &http.Response{
+					StatusCode: http.StatusServiceUnavailable,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					Header:     make(http.Header),
 				}
 			}),
