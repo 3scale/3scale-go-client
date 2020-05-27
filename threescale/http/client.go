@@ -160,8 +160,6 @@ func (c *Client) doReport(apiCall threescale.Request, options *Options) (*threes
 }
 
 func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, options *Options) (*threescale.AuthorizeResult, error) {
-	var xmlResponse internal.AuthResponseXML
-
 	if options != nil && options.context != nil {
 		req = req.WithContext(options.context)
 	}
@@ -191,27 +189,29 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 		return c.handleNoBodyExtensionForAuth(resp, extensions), nil
 	}
 
+	return c.handleAuthXMLResp(resp, extensions)
+}
+
+func (c *Client) handleAuthXMLResp(resp *http.Response, extensions api.Extensions) (*threescale.AuthorizeResult, error) {
+	var xmlResponse internal.AuthResponseXML
+
 	if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
 		return nil, err
 	}
 
-	response := &threescale.AuthorizeResult{
-		Authorized:          xmlResponse.Authorized,
-		ErrorCode:           xmlResponse.Code,
+	return &threescale.AuthorizeResult{
+		Authorized:   xmlResponse.Authorized,
+		UsageReports: c.convertXmlUsageReports(xmlResponse.UsageReports.Reports),
+		ErrorCode: func(code string, resp *http.Response) string {
+			if headerCode := c.parseRejectionReasonHeader(resp); headerCode != "" {
+				return headerCode
+			}
+			return code
+		}(xmlResponse.Code, resp),
 		RejectionReason:     xmlResponse.Reason,
-		AuthorizeExtensions: threescale.AuthorizeExtensions{},
+		AuthorizeExtensions: c.handleAuthExtensions(xmlResponse, resp, extensions),
 		RawResponse:         resp,
-	}
-
-	if reportLen := len(xmlResponse.UsageReports.Reports); reportLen > 0 {
-		response.UsageReports = c.convertXmlUsageReports(xmlResponse.UsageReports.Reports)
-	}
-
-	if extensions != nil {
-		response = c.handleAuthExtensions(xmlResponse, resp, extensions, response)
-	}
-
-	return response, err
+	}, nil
 }
 
 func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions, options *Options) (*threescale.ReportResult, error) {
@@ -265,23 +265,26 @@ func (c *Client) handleReportingError(resp *http.Response) (*threescale.ReportRe
 
 // handleAuthExtensions handles known extensions
 // extensions must not be nil
-func (c *Client) handleAuthExtensions(xmlResp internal.AuthResponseXML, resp *http.Response, extensions api.Extensions, annotatedResp *threescale.AuthorizeResult) *threescale.AuthorizeResult {
+func (c *Client) handleAuthExtensions(xmlResp internal.AuthResponseXML, resp *http.Response, extensions api.Extensions) threescale.AuthorizeExtensions {
+	var annotatedExts threescale.AuthorizeExtensions
+	if extensions == nil {
+		return annotatedExts
+	}
 	if _, ok := extensions[api.HierarchyExtension]; ok {
-		annotatedResp.Hierarchy = c.convertXmlHierarchy(xmlResp.Hierarchy)
+		annotatedExts.Hierarchy = c.convertXmlHierarchy(xmlResp.Hierarchy)
 	}
 
 	if _, ok := extensions[api.LimitExtension]; ok {
-		annotatedResp.RateLimits = c.handleRateLimitExtensions(resp)
+		annotatedExts.RateLimits = c.handleRateLimitExtensions(resp)
 	}
 
-	if code := c.parseRejectionReasonHeader(resp); code != "" {
-		annotatedResp.ErrorCode = code
-	}
-
-	return annotatedResp
+	return annotatedExts
 }
 
 func (c *Client) convertXmlUsageReports(xmlReports []internal.UsageReportXML) api.UsageReports {
+	if len(xmlReports) == 0 {
+		return nil
+	}
 	usageReports := make(api.UsageReports)
 	for _, report := range xmlReports {
 		if converted, err := convertXmlToUsageReport(report); err == nil {
