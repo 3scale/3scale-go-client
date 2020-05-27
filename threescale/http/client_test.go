@@ -374,6 +374,20 @@ func TestClient_Authorize(t *testing.T) {
 				}
 			}),
 		},
+		{
+			name:        "Test 500+ status codes return an error",
+			auth:        api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			transaction: api.Transaction{Params: api.Params{AppID: "any"}},
+			expectErr:   true,
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				equals(t, req.URL.Path, authzEndpoint)
+				return &http.Response{
+					StatusCode: http.StatusServiceUnavailable,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Header:     make(http.Header),
+				}
+			}),
+		},
 	}
 
 	for _, input := range inputs {
@@ -718,6 +732,19 @@ func TestClient_Report(t *testing.T) {
 				return &http.Response{
 					StatusCode: 202,
 					Body:       ioutil.NopCloser(bytes.NewBufferString("")),
+					Header:     make(http.Header),
+				}
+			}),
+		},
+		{
+			name:      "Test 500+ status codes return an error",
+			auth:      api.ClientAuth{Type: api.ProviderKey, Value: "any"},
+			expectErr: true,
+			injectClient: NewTestClient(func(req *http.Request) *http.Response {
+				equals(t, req.URL.Path, reportEndpoint)
+				return &http.Response{
+					StatusCode: http.StatusServiceUnavailable,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					Header:     make(http.Header),
 				}
 			}),

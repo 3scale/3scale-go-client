@@ -180,6 +180,13 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 		}
 	}()
 
+	if resp.StatusCode >= 500 {
+		return &threescale.AuthorizeResult{
+			Authorized:  false,
+			RawResponse: resp,
+		}, fmt.Errorf("unable to process request - status: %s", resp.Status)
+	}
+
 	if val, ok := extensions[NoBodyExtension]; ok && val == "1" {
 		return c.handleNoBodyExtensionForAuth(resp, extensions), nil
 	}
@@ -208,8 +215,6 @@ func (c *Client) executeAuthCall(req *http.Request, extensions api.Extensions, o
 }
 
 func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions, options *Options) (*threescale.ReportResult, error) {
-	var xmlResponse internal.ReportErrorXML
-
 	if options != nil && options.context != nil {
 		req = req.WithContext(options.context)
 	}
@@ -230,19 +235,30 @@ func (c *Client) executeReportCall(req *http.Request, extensions api.Extensions,
 
 	// ensure response is in 2xx range
 	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
-
-		if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
-			return nil, err
-		}
-		return &threescale.ReportResult{
-			Accepted:    false,
-			ErrorCode:   xmlResponse.Code,
-			RawResponse: resp,
-		}, nil
+		return c.handleReportingError(resp)
 	}
 
 	return &threescale.ReportResult{
 		Accepted:    true,
+		RawResponse: resp,
+	}, nil
+}
+
+func (c *Client) handleReportingError(resp *http.Response) (*threescale.ReportResult, error) {
+	if resp.StatusCode >= 500 {
+		return &threescale.ReportResult{
+			Accepted:    false,
+			RawResponse: resp,
+		}, fmt.Errorf("unable to process request - status: %s", resp.Status)
+	}
+
+	var xmlResponse internal.ReportErrorXML
+	if err := xml.NewDecoder(resp.Body).Decode(&xmlResponse); err != nil {
+		return nil, err
+	}
+	return &threescale.ReportResult{
+		Accepted:    false,
+		ErrorCode:   xmlResponse.Code,
 		RawResponse: resp,
 	}, nil
 }
