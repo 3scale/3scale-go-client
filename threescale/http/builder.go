@@ -81,6 +81,10 @@ func (rb requestBuilder) kindToHTTPRequest(baseURL string, kind kind) (*http.Req
 		return http.NewRequest(http.MethodGet, baseURL+authRepEndpoint, nil)
 	case report:
 		return http.NewRequest(http.MethodPost, baseURL+reportEndpoint, nil)
+	case oauthAuth:
+		return http.NewRequest(http.MethodGet, baseURL+oauthAuthzEndpoint, nil)
+	case oauthAuthRep:
+		return http.NewRequest(http.MethodGet, baseURL+oauthAuthRepEndpoint, nil)
 	default:
 		return nil, fmt.Errorf("unknown api call kind provided")
 	}
