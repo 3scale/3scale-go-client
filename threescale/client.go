@@ -14,6 +14,14 @@ type Client interface {
 	// the authentication provided in the transaction params
 	// Where multiple transactions are provided, all but the first should be discarded
 	AuthRep(request Request) (*AuthorizeResult, error)
+	// DEPRECATED - DO NOT USE in new code. Work around for versions
+	// of 3scale before 2.11 where OIDC applications needed to call
+	// the oauth_auth*.xml endpoints.
+	OauthAuthorize(request Request) (*AuthorizeResult, error)
+	// DEPRECATED - DO NOT USE in new code. Work around for versions
+	// of 3scale before 2.11 where OIDC applications needed to call
+	// the oauth_auth*.xml endpoints.
+	OauthAuthRep(request Request) (*AuthorizeResult, error)
 	// Report the transactions to 3scale backend with the authentication provided in the transactions params
 	Report(request Request) (*ReportResult, error)
 	// GetPeer returns the hostname of the connected backend
