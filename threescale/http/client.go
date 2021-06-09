@@ -1,6 +1,7 @@
 package http
 
 import (
+	"os"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -90,6 +91,7 @@ func (c *Client) Authorize(apiCall threescale.Request) (*threescale.AuthorizeRes
 
 // AuthorizeWithOptions provides the same behaviour as Authorize with additional functionality provided by Option(s)
 func (c *Client) AuthorizeWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [client] Client.Authorize:\n%#v\n\n", apiCall)
 	return c.doAuthOrAuthRep(apiCall, auth, newOptions(options...))
 }
 
@@ -100,6 +102,7 @@ func (c *Client) OauthAuthorize(apiCall threescale.Request) (*threescale.Authori
 
 // Deprecated - DO NOT use in new code.
 func (c *Client) OauthAuthorizeWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [client] Client.OauthAuthorize:\n%#v\n\n", apiCall)
 	return c.doAuthOrAuthRep(apiCall, oauthAuth, newOptions(options...))
 }
 
@@ -111,6 +114,7 @@ func (c *Client) AuthRep(apiCall threescale.Request) (*threescale.AuthorizeResul
 
 // AuthRepWithOptions provides the same behaviour as AuthRep with additional functionality provided by Option(s)
 func (c *Client) AuthRepWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [client] Client.AuthRep:\n%#v\n\n", apiCall)
 	return c.doAuthOrAuthRep(apiCall, authRep, newOptions(options...))
 }
 
@@ -121,6 +125,7 @@ func (c *Client) OauthAuthRep(apiCall threescale.Request) (*threescale.Authorize
 
 // Deprecated - DO NOT use in new code.
 func (c *Client) OauthAuthRepWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
+	fmt.Fprintf(os.Stderr, "\n***** [client] Client.OauthAuthRep:\n%#v\n\n", apiCall)
 	return c.doAuthOrAuthRep(apiCall, oauthAuthRep, newOptions(options...))
 }
 
