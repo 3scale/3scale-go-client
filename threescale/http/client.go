@@ -18,7 +18,9 @@ import (
 
 const (
 	authzEndpoint   = "/transactions/authorize.xml"
+	oauthAuthzEndpoint = "/transactions/oauth_authorize.xml"
 	authRepEndpoint = "/transactions/authrep.xml"
+	oauthAuthRepEndpoint = "/transactions/oauth_authrep.xml"
 	reportEndpoint  = "/transactions.xml"
 
 	statusEndpoint = "/status"
@@ -91,6 +93,16 @@ func (c *Client) AuthorizeWithOptions(apiCall threescale.Request, options ...Opt
 	return c.doAuthOrAuthRep(apiCall, auth, newOptions(options...))
 }
 
+// Deprecated - DO NOT use in new code.
+func (c *Client) OauthAuthorize(apiCall threescale.Request) (*threescale.AuthorizeResult, error) {
+	return c.OauthAuthorizeWithOptions(apiCall)
+}
+
+// Deprecated - DO NOT use in new code.
+func (c *Client) OauthAuthorizeWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
+	return c.doAuthOrAuthRep(apiCall, oauthAuth, newOptions(options...))
+}
+
 // AuthRep should be used to authorize and report, in a single transaction
 // for an application with the authentication provided in the transaction params
 func (c *Client) AuthRep(apiCall threescale.Request) (*threescale.AuthorizeResult, error) {
@@ -100,6 +112,16 @@ func (c *Client) AuthRep(apiCall threescale.Request) (*threescale.AuthorizeResul
 // AuthRepWithOptions provides the same behaviour as AuthRep with additional functionality provided by Option(s)
 func (c *Client) AuthRepWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
 	return c.doAuthOrAuthRep(apiCall, authRep, newOptions(options...))
+}
+
+// Deprecated - DO NOT use in new code.
+func (c *Client) OauthAuthRep(apiCall threescale.Request) (*threescale.AuthorizeResult, error) {
+	return c.OauthAuthRepWithOptions(apiCall)
+}
+
+// Deprecated - DO NOT use in new code.
+func (c *Client) OauthAuthRepWithOptions(apiCall threescale.Request, options ...Option) (*threescale.AuthorizeResult, error) {
+	return c.doAuthOrAuthRep(apiCall, oauthAuthRep, newOptions(options...))
 }
 
 func (c *Client) Report(apiCall threescale.Request) (*threescale.ReportResult, error) {
@@ -408,6 +430,9 @@ const (
 	auth kind = iota
 	authRep
 	report
+	// DO NOT use the below kinds in any new code - they are deprecated
+	oauthAuth
+	oauthAuthRep
 )
 
 // Verifies a custom backend is valid
