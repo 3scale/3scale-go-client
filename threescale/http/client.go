@@ -120,7 +120,7 @@ func (c *Client) AuthRepWithOptions(apiCall threescale.Request, options ...Optio
 
 // Deprecated - DO NOT use in new code.
 func (c *Client) OauthAuthRep(apiCall threescale.Request) (*threescale.AuthorizeResult, error) {
-	return c.AuthRepWithOptions(apiCall)
+	return c.OauthAuthRepWithOptions(apiCall)
 }
 
 // Deprecated - DO NOT use in new code.
